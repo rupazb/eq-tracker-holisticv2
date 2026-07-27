@@ -3,7 +3,7 @@
 // 1. Deploy apps-script.gs as a Web App (see README.md).
 // 2. Paste the deployment URL below. It looks like:
 //    https://script.google.com/macros/s/AKfycb.../exec
-const API_URL = 'https://script.google.com/macros/s/AKfycbzjY5hIk6uKjgWJiRKlNz-6CkvSEsA4a6IZHoet_z_hfvu1wtE_oy1bxrdqL5l1zaf2cg/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbw_JcaOFzQrRqMLd3NEu_SN0bQ8cBGIsHvkepLBm88I19eNXde6_09c315I0J0rZVuP/exec';
 
 // Used only until the live Config tab loads (first paint, or if the
 // network call fails). Keeps the form usable even offline for a moment.
