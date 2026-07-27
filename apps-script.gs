@@ -307,7 +307,8 @@ function getConfig() {
 // unblocked or marked delivered. The time-range filter only affects the
 // "status split" aggregate count; the "current status board" always shows
 // the latest status for each project regardless of date range.
-// "Delivered / Complete" projects are excluded from ongoing views.
+// "Delivered / Complete" projects are excluded from currentBoard but shown
+// in a separate deliveredProjects section, and INCLUDED in all metrics.
 // ---------------------------------------------------------------------
 function readLogRows() {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(LOG_SHEET_NAME);
@@ -356,14 +357,11 @@ function getDashboard(params) {
   // For status split, use only rows within the date range
   const dateFilteredRows = filterByDate(allRows, from, to);
   
-  // IMPORTANT: Exclude "Delivered / Complete" from metrics — once delivered,
-  // a project shouldn't keep counting as a check or blocker
-  const activeRows = dateFilteredRows.filter(r => r.status !== 'Delivered / Complete');
-
-  const totalChecks = activeRows.length;
+  // IMPORTANT: Include ALL statuses (including Delivered) in metrics
+  const totalChecks = dateFilteredRows.length;
   const byStatus = {};
   STATUS_OPTIONS.forEach(s => byStatus[s] = 0);
-  activeRows.forEach(r => { if (byStatus[r.status] !== undefined) byStatus[r.status]++; });
+  dateFilteredRows.forEach(r => { if (byStatus[r.status] !== undefined) byStatus[r.status]++; });
 
   const statusSplit = STATUS_OPTIONS.map(s => ({
     status: s,
@@ -371,9 +369,9 @@ function getDashboard(params) {
     pct: totalChecks ? Math.round((byStatus[s] / totalChecks) * 100) : 0
   }));
 
-  // Per-workstream rollup (also exclude delivered)
+  // Per-workstream rollup (INCLUDE delivered in counts)
   const wsMap = {};
-  activeRows.forEach(r => {
+  dateFilteredRows.forEach(r => {
     if (!wsMap[r.workstream]) {
       wsMap[r.workstream] = { workstream: r.workstream, projects: new Set(), checks: 0, blockedGC: 0, blockedEQ: 0, delivered: 0, inProgress: 0 };
     }
@@ -383,6 +381,7 @@ function getDashboard(params) {
     if (r.status === 'Blocked - GC') w.blockedGC++;
     else if (r.status === 'Blocked - EQ') w.blockedEQ++;
     else if (r.status === 'In Progress') w.inProgress++;
+    else if (r.status === 'Delivered / Complete') w.delivered++;
   });
   const byWorkstream = Object.values(wsMap).map(w => ({
     workstream: w.workstream,
@@ -395,24 +394,32 @@ function getDashboard(params) {
   }));
 
   // Current status board: latest entry per (workstream, project) from ALL time,
-  // excluding delivered projects. This means a project blocked on 13/07/26 will
-  // keep showing as blocked on the dashboard until it's unblocked or delivered.
+  // EXCLUDING delivered projects (they go in their own section)
   const latestMap = {};
+  const deliveredMap = {};
   allRows.forEach(r => {
-    // Skip delivered entries — once delivered, don't show the project anymore
+    const key = r.workstream + '||' + r.project;
+    
     if (r.status === 'Delivered / Complete') {
-      // If a project is marked delivered, remove it from the board
-      const key = r.workstream + '||' + r.project;
+      // Track delivered projects separately
+      const existing = deliveredMap[key];
+      if (!existing || new Date(r.timestamp) > new Date(existing.timestamp)) {
+        deliveredMap[key] = r;
+      }
+      // Remove from active board if it was there
       delete latestMap[key];
       return;
     }
-    const key = r.workstream + '||' + r.project;
+    
+    // For non-delivered, track in active board
     const existing = latestMap[key];
     if (!existing || new Date(r.timestamp) > new Date(existing.timestamp)) {
       latestMap[key] = r;
     }
   });
+  
   const currentBoard = Object.values(latestMap).sort((a, b) => a.workstream.localeCompare(b.workstream));
+  const deliveredProjects = Object.values(deliveredMap).sort((a, b) => a.workstream.localeCompare(b.workstream));
 
   // Blocker callout: projects currently Blocked-GC or Blocked-EQ, with how many of their
   // last N logged days were also blocked (consecutive-blocked streak).
@@ -435,6 +442,7 @@ function getDashboard(params) {
     statusSplit: statusSplit,
     byWorkstream: byWorkstream,
     currentBoard: currentBoard,
+    deliveredProjects: deliveredProjects,
     blockers: blockers
   };
 }
