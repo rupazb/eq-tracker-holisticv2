@@ -1,0 +1,1778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GIS Project Services — Status Tracker</title>
+<style>
+  :root {
+    --bg: #0B0F14;
+    --bg-elevated: #10151C;
+    --card: #131A23;
+    --card-hover: #17202B;
+    --border: #232D3A;
+    --border-soft: #1B242F;
+    --text: #E9EEF4;
+    --text-soft: #8B98A8;
+    --text-faint: #5C6878;
+    --accent: #22D3B8;
+    --accent-soft: rgba(34, 211, 184, 0.12);
+    --accent-dim: rgba(34, 211, 184, 0.28);
+    --danger: #F0616B;
+    --warn: #F2B84B;
+    --info: #4F9EF8;
+    --success: #34D399;
+    --radius: 14px;
+    --radius-sm: 9px;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    background-image:
+      radial-gradient(circle at 15% 0%, rgba(34,211,184,0.06), transparent 40%),
+      radial-gradient(circle at 85% 15%, rgba(79,158,248,0.05), transparent 45%);
+    background-attachment: fixed;
+  }
+
+  header.app-header {
+    padding: 20px 20px 0;
+    max-width: 880px;
+    margin: 0 auto;
+  }
+  header.app-header .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  header.app-header .brand-mark {
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--accent), #1AA894);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 13px;
+    color: #06231D;
+    flex-shrink: 0;
+  }
+  header.app-header .brand-text .eyebrow {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+  }
+  header.app-header .brand-text h1 {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 650;
+    letter-spacing: -0.01em;
+  }
+
+  nav.top-nav {
+    display: flex;
+    gap: 4px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 4px;
+    margin-bottom: 16px;
+  }
+  .nav-button {
+    flex: 1;
+    padding: 9px 14px;
+    border: none;
+    background: none;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--text-soft);
+    cursor: pointer;
+    border-radius: 100px;
+    transition: background 0.18s ease, color 0.18s ease;
+  }
+  .nav-button.nav-active {
+    color: #06231D;
+    background: var(--accent);
+  }
+
+  main.app-main { max-width: 880px; margin: 0 auto; padding: 0 20px 70px; }
+
+  .view { display: none; }
+  .view.view-active { display: block; }
+
+  .segment-row {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    margin-bottom: 16px;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .segment-row::-webkit-scrollbar { display: none; }
+  .segment-button {
+    flex-shrink: 0;
+    padding: 8px 15px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--text-soft);
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 100px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .segment-button.segment-active {
+    color: var(--accent);
+    border-color: var(--accent-dim);
+    background: var(--accent-soft);
+  }
+
+  .insight-panel { display: none; }
+  .insight-panel.insight-panel-active { display: block; }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    margin-bottom: 14px;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.02) inset, 0 10px 30px -20px rgba(0,0,0,0.6);
+  }
+
+  .card h2 {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text-soft);
+    margin: 0 0 14px;
+    font-weight: 650;
+  }
+  .card-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 14px;
+  }
+  .card-header-row h2 { margin: 0; }
+  .card-header-meta {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--text-faint);
+  }
+
+  .week-nav {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .week-nav-btn {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    color: var(--text-soft);
+    border-radius: 6px;
+    font-size: 15px;
+    line-height: 1;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .week-nav-btn:hover { color: var(--accent); border-color: var(--accent-dim); }
+
+  .form-intro {
+    font-size: 13px;
+    color: var(--text-soft);
+    margin: -6px 0 16px;
+  }
+
+  .entry-card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg-elevated);
+    padding: 15px 15px 4px;
+    margin-bottom: 14px;
+    position: relative;
+  }
+  .entry-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .entry-card-index {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-faint);
+    font-weight: 650;
+  }
+  .remove-entry-btn {
+    border: 1px solid var(--border);
+    background: none;
+    color: var(--danger);
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 5px 10px;
+    border-radius: 100px;
+    cursor: pointer;
+  }
+  .remove-entry-btn:hover { border-color: var(--danger); }
+
+  form .field { margin-bottom: 14px; }
+  form .field-row { display: flex; gap: 10px; }
+  form .field-row .field { flex: 1; }
+
+  label {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: var(--text-soft);
+    letter-spacing: 0.01em;
+  }
+  label .req { color: var(--danger); }
+
+  input[type="text"], input[type="date"], input[type="number"], select, textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 15px;
+    font-family: inherit;
+    background: var(--bg-elevated);
+    color: var(--text);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  input::placeholder, textarea::placeholder { color: var(--text-faint); }
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--accent-dim);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+  textarea { resize: vertical; min-height: 60px; }
+  select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238B98A8'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 13px center; padding-right: 32px; }
+
+  .hidden { display: none !important; }
+
+  .link-btn {
+    background: none;
+    border: none;
+    color: var(--accent);
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+    margin: -6px 0 14px;
+  }
+  .link-btn:hover { text-decoration: underline; }
+
+  button.primary {
+    width: 100%;
+    padding: 13px;
+    background: var(--accent);
+    color: #06231D;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 14.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: filter 0.15s ease, transform 0.1s ease;
+  }
+  button.primary:hover { filter: brightness(1.08); }
+  button.primary:active { transform: scale(0.99); }
+  button.primary:disabled { opacity: 0.5; cursor: default; filter: none; }
+
+  button.secondary {
+    width: 100%;
+    padding: 12px;
+    background: var(--bg-elevated);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-bottom: 14px;
+  }
+  button.secondary:hover { border-color: var(--accent-dim); color: var(--accent); }
+
+  /* Overview controls */
+  .dashboard-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+  .dashboard-controls select { flex: 1; }
+  .icon-btn {
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--text);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .icon-btn:hover { border-color: var(--accent-dim); color: var(--accent); }
+
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 15px;
+  }
+  .stat-card-danger { border-color: rgba(240,97,107,0.35); background: linear-gradient(180deg, rgba(240,97,107,0.08), var(--card)); }
+  .stat-value { font-family: var(--mono); font-size: 25px; font-weight: 650; color: var(--text); letter-spacing: -0.02em; }
+  .stat-card-accent .stat-value { color: var(--accent); }
+  .stat-card-info .stat-value { color: var(--info); }
+  .stat-card-danger .stat-value { color: var(--danger); }
+  .stat-card-success .stat-value { color: var(--success); }
+  .stat-label { font-size: 12px; color: var(--text-soft); margin-top: 3px; }
+
+  .status-row { margin-bottom: 13px; }
+  .status-row:last-child { margin-bottom: 0; }
+  .status-row-label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .status-row-count { font-family: var(--mono); font-size: 12px; color: var(--text-soft); }
+  .status-row-track { background: var(--bg-elevated); border-radius: 6px; height: 7px; overflow: hidden; }
+  .status-row-fill { height: 100%; border-radius: 6px; transition: width 0.4s ease; }
+
+  .chip {
+    --chip-color: #7A8899;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 650;
+    padding: 4px 10px;
+    border-radius: 100px;
+    background: color-mix(in srgb, var(--chip-color) 16%, var(--bg-elevated));
+    color: var(--chip-color);
+  }
+  .chip::before {
+    content: "";
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--chip-color);
+    flex-shrink: 0;
+  }
+  .chip-sm { font-size: 11px; padding: 3px 8px; }
+  .chip-muted { --chip-color: #5C6878; }
+
+  .table-scroll { overflow-x: auto; }
+  .data-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 520px; }
+  .data-table th, .data-table td {
+    text-align: left;
+    padding: 9px 8px;
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .data-table th { color: var(--text-faint); font-weight: 650; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .data-table tbody tr:hover { background: var(--card-hover); }
+  .cell-strong { font-weight: 600; }
+  .cell-warn { color: var(--danger); font-weight: 700; }
+  .cell-good { color: var(--success); font-weight: 700; }
+
+  .board-card {
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-sm);
+    padding: 13px;
+    margin-bottom: 10px;
+    background: var(--bg-elevated);
+  }
+  .board-card:last-child { margin-bottom: 0; }
+  .board-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; gap: 8px; }
+  .board-card-ws { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-faint); }
+  .board-card-project { font-weight: 650; font-size: 15px; }
+  .board-card-meta { font-size: 12px; color: var(--text-soft); margin: 4px 0 7px; }
+  .board-card-update { font-size: 13px; margin-bottom: 4px; color: var(--text); }
+  .board-card-next { font-size: 13px; color: var(--accent); }
+
+  .blocker-row {
+    border-left: 3px solid var(--danger);
+    padding: 9px 0 9px 12px;
+    margin-bottom: 11px;
+  }
+  .blocker-row:last-child { margin-bottom: 0; }
+  .blocker-ws { color: var(--text-soft); font-weight: 400; }
+  .blocker-meta { display: flex; gap: 9px; align-items: center; margin: 5px 0; }
+  .blocker-streak { font-size: 11.5px; color: var(--text-faint); font-family: var(--mono); }
+  .blocker-next { font-size: 13px; color: var(--text-soft); }
+
+  .empty-note { color: var(--text-faint); font-size: 13px; margin: 0; }
+
+  /* Weekly panel */
+  .weekly-card {
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    margin-bottom: 12px;
+    background: var(--bg-elevated);
+  }
+  .weekly-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .weekly-card-ws { font-weight: 650; font-size: 14px; }
+  .weekly-stats { display: flex; gap: 20px; margin-bottom: 4px; }
+  .weekly-stat-value { font-family: var(--mono); font-size: 19px; font-weight: 650; }
+  .weekly-stat-label { font-size: 11px; color: var(--text-faint); margin-top: 1px; }
+  .weekly-stat-good .weekly-stat-value { color: var(--success); }
+  .weekly-stat-warn .weekly-stat-value { color: var(--warn); }
+  .weekly-note { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-soft); }
+  .weekly-note-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-faint); margin-bottom: 3px; }
+  .weekly-note-text { font-size: 13px; color: var(--text); line-height: 1.45; }
+  .weekly-note-good .weekly-note-label { color: var(--success); }
+  .weekly-note-warn .weekly-note-label { color: var(--warn); }
+
+  /* Bandwidth panel */
+  .bandwidth-card {
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    margin-bottom: 12px;
+    background: var(--bg-elevated);
+  }
+  .bandwidth-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+  .bandwidth-name { font-weight: 650; font-size: 14.5px; }
+  .bandwidth-hours { font-family: var(--mono); font-size: 12.5px; color: var(--text-soft); }
+  .bandwidth-track { margin-bottom: 6px; }
+  .bandwidth-meta { font-size: 12px; color: var(--text-soft); margin-bottom: 10px; }
+  .bandwidth-breakdown { display: flex; flex-wrap: wrap; gap: 6px; }
+  .breakdown-pill {
+    font-size: 11px;
+    padding: 4px 9px;
+    border-radius: 100px;
+    background: var(--bg);
+    border: 1px solid var(--border-soft);
+    color: var(--text-soft);
+    font-family: var(--mono);
+  }
+
+  /* Risk panel */
+  .risk-card {
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    margin-bottom: 12px;
+    background: var(--bg-elevated);
+  }
+  .risk-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .risk-card-ws { font-weight: 650; font-size: 14px; }
+  .risk-attrs { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .risk-attr { display: flex; justify-content: space-between; align-items: center; }
+  .risk-attr-label { font-size: 12px; color: var(--text-soft); }
+
+  #toast-container {
+    position: fixed;
+    bottom: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: calc(100% - 32px);
+    max-width: 400px;
+  }
+  .toast {
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 12px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    text-align: center;
+    box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
+  }
+  .toast-visible { opacity: 1; transform: translateY(0); }
+  .toast-error { border-color: rgba(240,97,107,0.4); color: #FFC7CA; }
+  .toast-success { border-color: var(--accent-dim); color: var(--accent); }
+  .toast-warn { border-color: rgba(242,184,75,0.4); color: var(--warn); }
+
+  @media (min-width: 640px) {
+    .stat-grid { grid-template-columns: repeat(4, 1fr); }
+    .risk-attrs { grid-template-columns: 1fr 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="brand">
+    <div class="brand-mark">GC</div>
+    <div class="brand-text">
+      <div class="eyebrow">EQ × GC · GIS Project Services</div>
+      <h1>Status Tracker</h1>
+    </div>
+  </div>
+</header>
+
+<main class="app-main">
+
+  <nav class="top-nav">
+    <button class="nav-button nav-active" data-view="view-form">Log Update</button>
+    <button class="nav-button" data-view="view-insights">Insights</button>
+  </nav>
+
+  <!-- ============================= LOG UPDATE ============================= -->
+  <section id="view-form" class="view view-active">
+    <div class="card">
+      <h2>Log today's status</h2>
+      <p class="form-intro">Add one card per workstream or project you touched today, then submit once.</p>
+      <form id="daily-form">
+
+        <div class="field-row">
+          <div class="field">
+            <label for="field-date">Date</label>
+            <input type="date" id="field-date" required>
+          </div>
+          <div class="field">
+            <label for="field-submitted-by">Your name</label>
+            <input type="text" id="field-submitted-by" placeholder="e.g. Radha">
+          </div>
+        </div>
+
+        <div id="entries-container"></div>
+
+        <button type="button" class="secondary" id="add-entry-btn">+ Add another workstream</button>
+
+        <button type="submit" class="primary" id="submit-btn">Log update</button>
+      </form>
+
+      <datalist id="poc-eq-list"></datalist>
+      <datalist id="poc-gc-list"></datalist>
+      <datalist id="step-suggestions"></datalist>
+    </div>
+  </section>
+
+  <!-- ============================== INSIGHTS =============================== -->
+  <section id="view-insights" class="view">
+
+    <div class="segment-row">
+      <button class="segment-button segment-active" data-panel="panel-overview">Overview</button>
+      <button class="segment-button" data-panel="panel-weekly">Weekly</button>
+      <button class="segment-button" data-panel="panel-bandwidth">Bandwidth</button>
+      <button class="segment-button" data-panel="panel-risk">Risk</button>
+    </div>
+
+    <!-- Overview -->
+    <div id="panel-overview" class="insight-panel insight-panel-active">
+      <div class="dashboard-controls">
+        <select id="dashboard-range">
+          <option value="7">Last 7 days</option>
+          <option value="14">Last 14 days</option>
+          <option value="30">Last 30 days</option>
+          <option value="all">All time</option>
+        </select>
+        <button class="icon-btn" id="dashboard-refresh">Refresh</button>
+      </div>
+
+      <div class="stat-grid" id="summary-bar"></div>
+
+      <div class="card">
+        <h2>Status split</h2>
+        <div id="status-bars"></div>
+      </div>
+
+      <div class="card">
+        <h2>Currently blocked</h2>
+        <div id="blocker-callout"></div>
+      </div>
+
+      <div class="card">
+        <h2>By workstream</h2>
+        <div id="workstream-table"></div>
+      </div>
+
+      <div class="card">
+        <h2>Current status board</h2>
+        <div id="current-board"></div>
+      </div>
+    </div>
+
+    <!-- Weekly -->
+    <div id="panel-weekly" class="insight-panel">
+      <button type="button" class="secondary" id="weekly-note-toggle">+ Submit this week's note for a workstream</button>
+
+      <div class="card hidden" id="weekly-note-form-wrap">
+        <h2>Weekly note</h2>
+        <form id="weekly-note-form">
+          <div class="field-row">
+            <div class="field">
+              <label for="weekly-field-week-start">Week starting</label>
+              <input type="date" id="weekly-field-week-start" required>
+            </div>
+            <div class="field">
+              <label for="weekly-field-submitted-by">Your name</label>
+              <input type="text" id="weekly-field-submitted-by" placeholder="e.g. Rupaz">
+            </div>
+          </div>
+          <div class="field">
+            <label for="weekly-field-workstream">Workstream <span class="req">*</span></label>
+            <select id="weekly-field-workstream" required></select>
+          </div>
+          <div class="field">
+            <label for="weekly-field-wins">Win(s) for this week</label>
+            <textarea id="weekly-field-wins"></textarea>
+          </div>
+          <div class="field">
+            <label for="weekly-field-priorities">Core priorities for next week</label>
+            <textarea id="weekly-field-priorities"></textarea>
+          </div>
+          <div class="field">
+            <label for="weekly-field-help">What help do you need?</label>
+            <textarea id="weekly-field-help"></textarea>
+          </div>
+          <div class="field">
+            <label for="weekly-field-reasons">Reasons for spilling over</label>
+            <textarea id="weekly-field-reasons"></textarea>
+          </div>
+          <button type="submit" class="primary" id="weekly-submit-btn">Save weekly note</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="card-header-row">
+          <h2>Weekly update</h2>
+          <div class="week-nav">
+            <button type="button" class="week-nav-btn" id="weekly-prev-week" aria-label="Previous week">‹</button>
+            <span class="card-header-meta" id="weekly-range-label"></span>
+            <button type="button" class="week-nav-btn" id="weekly-next-week" aria-label="Next week">›</button>
+          </div>
+        </div>
+        <div id="weekly-list"></div>
+      </div>
+    </div>
+
+    <!-- Bandwidth -->
+    <div id="panel-bandwidth" class="insight-panel">
+      <div class="card">
+        <div class="card-header-row">
+          <h2>Team bandwidth</h2>
+          <div class="week-nav">
+            <button type="button" class="week-nav-btn" id="bandwidth-prev-week" aria-label="Previous week">‹</button>
+            <span class="card-header-meta" id="bandwidth-range-label"></span>
+            <button type="button" class="week-nav-btn" id="bandwidth-next-week" aria-label="Next week">›</button>
+          </div>
+        </div>
+        <div id="bandwidth-list"></div>
+      </div>
+    </div>
+
+    <!-- Risk -->
+    <div id="panel-risk" class="insight-panel">
+      <div class="card">
+        <h2>Workstream risk profile</h2>
+        <div id="risk-grid"></div>
+      </div>
+    </div>
+
+  </section>
+
+</main>
+
+<div id="toast-container"></div>
+
+<script>
+// ===== config.js =====
+// GIS Project Services — Status Tracker frontend config
+//
+// 1. Deploy apps-script.gs as a Web App (see README.md).
+// 2. Paste the deployment URL below. It looks like:
+//    https://script.google.com/macros/s/AKfycb.../exec
+const API_URL = 'https://script.google.com/macros/s/AKfycbzjY5hIk6uKjgWJiRKlNz-6CkvSEsA4a6IZHoet_z_hfvu1wtE_oy1bxrdqL5l1zaf2cg/exec';
+
+// Used only until the live Config tab loads (first paint, or if the
+// network call fails). Keeps the form usable even offline for a moment.
+// Edit the Config tab in the Sheet to change these for real — this is
+// just a fallback mirror of the seed data.
+const FALLBACK_CONFIG = {
+  workstreams: [
+    'Initial Strat - HIR',
+    'Initial Stratification - NFMR',
+    'Change Detections',
+    'Restrat-HIR',
+    'Fire Impact Assessment',
+    'Survey Packages',
+    'Ad-hoc',
+    'WS1 - Paddock Mapping & Digitizing',
+    'WS3 - ALS to CPC',
+    'Peer Review QA'
+  ],
+  projectsByWorkstream: {
+    'Initial Strat - HIR': ['Nerren Nerren', 'Quobba', 'Burandilla Cairns', 'Mt Philip', 'Bulla Park'],
+    'Initial Stratification - NFMR': ['Elvanbrook & Dalkeith', 'Sandford'],
+    'Change Detections': ['Berangabah Yallock, Salt Lake, Nimboy 2'],
+    'Restrat-HIR': ['Yathonga(rework)'],
+    'Fire Impact Assessment': ['Strathmore'],
+    'Survey Packages': ['Edaggee'],
+    'Ad-hoc': ['AD survey package overlaps'],
+    'WS1 - Paddock Mapping & Digitizing': ['Nimboy 1'],
+    'WS3 - ALS to CPC': [],
+    'Peer Review QA': ['Nerren Nerren', 'Yathonga', 'Thoura']
+  },
+  pocEQ: ['Rupaz', 'Radha', 'Nikhil', 'Yoga', 'Thoura'],
+  pocGC: ['Chatura', 'Elissa', 'Emma', 'Ines', 'Kristie', 'Louise', 'Madeleine', 'Mary', 'Patrick Howie', 'Shanelle', 'Shannon', 'Vaibhav', 'Xavier', 'Silas', 'Sally'],
+  statuses: ['In Progress', 'Blocked - GC', 'Blocked - EQ', 'Delivered / Complete'],
+  urgencies: ['Very High', 'High', 'Medium', 'Low', 'Nice to have', 'Unassigned'],
+  // Stage/Step is free text on the form — these are just starting
+  // suggestions (autocomplete), not an enforced list. It means something
+  // different in every workstream, so it can't be a fixed dropdown.
+  steps: ['Pre-processing', 'Product Update', 'Post Processing', 'CEA Segmentation', 'Peer Review QA', 'Testing Phase', 'Review', 'Final QA', 'Delivered'],
+  timeBuckets: ['Execution', 'QA / Review', 'Coordination / Waiting on GC', 'Admin / Meetings', 'Rework']
+};
+
+// Same constants as the backend's bandwidth calc — used for the
+// client-side capacity label before live data loads.
+const WEEKLY_CAPACITY_HOURS = 40;
+
+// Status -> colour, used consistently across the form and dashboard
+const STATUS_COLORS = {
+  'In Progress': '#4F9EF8',
+  'Blocked - GC': '#F0616B',
+  'Blocked - EQ': '#F2B84B',
+  'Delivered / Complete': '#34D399'
+};
+
+// Risk level -> colour, used on the Risk panel
+const RISK_COLORS = {
+  'High': '#F0616B',
+  'Medium': '#F2B84B',
+  'Low': '#34D399'
+};
+
+</script>
+<script>
+// ===== utils.js =====
+// Small shared helpers, no dependencies.
+
+function qs(sel, root) { return (root || document).querySelector(sel); }
+function qsa(sel, root) { return Array.from((root || document).querySelectorAll(sel)); }
+
+function el(tag, attrs, children) {
+  const node = document.createElement(tag);
+  Object.entries(attrs || {}).forEach(([k, v]) => {
+    if (k === 'class') node.className = v;
+    else if (k === 'text') node.textContent = v;
+    else if (k.startsWith('on') && typeof v === 'function') node.addEventListener(k.slice(2), v);
+    else node.setAttribute(k, v);
+  });
+  (children || []).forEach(c => node.appendChild(typeof c === 'string' ? document.createTextNode(c) : c));
+  return node;
+}
+
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function todayISO() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+// All the functions below work purely with "YYYY-MM-DD" calendar dates —
+// no time-of-day, no local timezone involved in the arithmetic. Each date
+// is anchored at UTC midnight internally (Date.UTC) and read back with
+// UTC getters, so the result is identical regardless of the viewer's
+// timezone. (Mixing local-time construction with toISOString(), as this
+// used to, silently shifts the date by a day for anyone not in UTC+0 —
+// that was the bug behind week-nav showing Sun-Wed instead of Mon-Fri.)
+
+function addDaysISO(iso, days) {
+  const [y, m, d] = iso.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  dt.setUTCDate(dt.getUTCDate() + days);
+  const yy = dt.getUTCFullYear();
+  const mm = String(dt.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(dt.getUTCDate()).padStart(2, '0');
+  return `${yy}-${mm}-${dd}`;
+}
+
+function mostRecentMondayISO() {
+  const today = todayISO();
+  const [y, m, d] = today.split('-').map(Number);
+  const dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay(); // 0 = Sun
+  const diff = dow === 0 ? 6 : dow - 1;
+  return addDaysISO(today, -diff);
+}
+
+function formatDateLabel(value) {
+  if (!value) return '';
+  // Accepts a bare "YYYY-MM-DD" string (what the backend sends), a full
+  // ISO datetime string, or a Date object — always renders the calendar
+  // date as intended, using UTC throughout so it can't drift a day either
+  // direction depending on the viewer's timezone.
+  let y, m, d;
+  if (value instanceof Date) {
+    if (isNaN(value)) return String(value);
+    y = value.getFullYear(); m = value.getMonth() + 1; d = value.getDate();
+  } else {
+    const match = String(value).match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (!match) {
+      const parsed = new Date(value);
+      return isNaN(parsed) ? String(value) : parsed.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    }
+    y = Number(match[1]); m = Number(match[2]); d = Number(match[3]);
+  }
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  return dt.toLocaleDateString(undefined, { month: 'short', day: 'numeric', timeZone: 'UTC' });
+}
+
+function weekRangeLabel(startISO) {
+  const endISO = addDaysISO(startISO, 4); // Friday — work week is Mon-Fri
+  return `${formatDateLabel(startISO)} – ${formatDateLabel(endISO)}`;
+}
+
+function debounce(fn, ms) {
+  let t;
+  return (...args) => {
+    clearTimeout(t);
+    t = setTimeout(() => fn(...args), ms);
+  };
+}
+
+function pct(part, total) {
+  if (!total) return 0;
+  return Math.round((part / total) * 100);
+}
+
+function clamp(n, min, max) {
+  return Math.min(max, Math.max(min, n));
+}
+
+// Local draft, so a half-filled form on a spotty connection isn't lost.
+const DRAFT_KEY = 'gis-tracker-draft';
+function saveDraft(data) {
+  try { localStorage.setItem(DRAFT_KEY, JSON.stringify(data)); } catch (e) { /* ignore */ }
+}
+function loadDraft() {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
+function clearDraft() {
+  try { localStorage.removeItem(DRAFT_KEY); } catch (e) { /* ignore */ }
+}
+
+function showToast(message, kind) {
+  const container = qs('#toast-container');
+  if (!container) return;
+  const node = el('div', { class: 'toast toast-' + (kind || 'info'), text: message });
+  container.appendChild(node);
+  requestAnimationFrame(() => node.classList.add('toast-visible'));
+  setTimeout(() => {
+    node.classList.remove('toast-visible');
+    setTimeout(() => node.remove(), 300);
+  }, 3200);
+}
+
+</script>
+<script>
+// ===== api.js =====
+// Thin wrapper around the Apps Script Web App.
+//
+// Requests are kept as "simple requests" (GET, or POST with a text/plain
+// body) on purpose — Apps Script Web Apps don't handle CORS preflight
+// (OPTIONS) requests, so a POST with a custom application/json header
+// would fail silently in the browser. JSON.stringify(...) as the body
+// with no explicit header defaults to text/plain, which avoids that.
+
+const Api = {
+  async fetchConfig() {
+    try {
+      const res = await fetch(`${API_URL}?action=config`);
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || 'Config request failed');
+      return data;
+    } catch (err) {
+      console.warn('Falling back to local config:', err);
+      return { ok: true, ...FALLBACK_CONFIG, offline: true };
+    }
+  },
+
+  async fetchDashboard(params) {
+    const qsStr = new URLSearchParams({ action: 'dashboard', ...(params || {}) }).toString();
+    const res = await fetch(`${API_URL}?${qsStr}`);
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Dashboard request failed');
+    return data;
+  },
+
+  async fetchRecentLog(limit) {
+    const qsStr = new URLSearchParams({ action: 'log', limit: limit || 50 }).toString();
+    const res = await fetch(`${API_URL}?${qsStr}`);
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Log request failed');
+    return data;
+  },
+
+  async submitEntry(payload) {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Submit failed');
+    return data;
+  },
+
+  async fetchWeekly(params) {
+    const qsStr = new URLSearchParams({ action: 'weekly', ...(params || {}) }).toString();
+    const res = await fetch(`${API_URL}?${qsStr}`);
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Weekly update request failed');
+    return data;
+  },
+
+  async fetchBandwidth(params) {
+    const qsStr = new URLSearchParams({ action: 'bandwidth', ...(params || {}) }).toString();
+    const res = await fetch(`${API_URL}?${qsStr}`);
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Bandwidth request failed');
+    return data;
+  },
+
+  async fetchRisk() {
+    const res = await fetch(`${API_URL}?action=risk`);
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Risk request failed');
+    return data;
+  },
+
+  async submitWeeklyNote(payload) {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ type: 'weekly', ...payload })
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Submit failed');
+    return data;
+  }
+};
+
+</script>
+<script>
+// ===== render.js =====
+// All DOM-building lives here. app.js decides *when* to call these;
+// this file only decides *how* to draw.
+
+const Render = {
+  populateSelect(select, options, placeholder) {
+    select.innerHTML = '';
+    if (placeholder) select.appendChild(el('option', { value: '', text: placeholder }));
+    options.forEach(opt => select.appendChild(el('option', { value: opt, text: opt })));
+  },
+
+  statusChip(status) {
+    const color = STATUS_COLORS[status] || '#7A8899';
+    return el('span', {
+      class: 'chip',
+      style: `--chip-color:${color}`,
+      text: status || 'Unknown'
+    });
+  },
+
+  riskChip(level) {
+    const color = RISK_COLORS[level] || '#7A8899';
+    return el('span', {
+      class: 'chip chip-sm',
+      style: `--chip-color:${color}`,
+      text: level || '—'
+    });
+  },
+
+  // ---------------------------------------------------------------
+  // Overview panel
+  // ---------------------------------------------------------------
+  dashboard(data) {
+    this.summaryBar(data);
+    this.statusBars(data.statusSplit, data.totalChecks);
+    this.workstreamTable(data.byWorkstream);
+    this.currentBoard(data.currentBoard);
+    this.blockerCallout(data.blockers);
+  },
+
+  summaryBar(data) {
+    const target = qs('#summary-bar');
+    target.innerHTML = '';
+    const projectCount = new Set(data.currentBoard.map(r => r.workstream + '||' + r.project)).size;
+    const blockedCount = data.blockers.length;
+    const deliveredPct = data.statusSplit.find(s => s.status === 'Delivered / Complete')?.pct || 0;
+
+    const cards = [
+      { label: 'Active projects', value: projectCount, accent: 'accent' },
+      { label: 'Check-ins logged', value: data.totalChecks, accent: 'info' },
+      { label: 'Currently blocked', value: blockedCount, accent: blockedCount > 0 ? 'danger' : 'accent' },
+      { label: 'Delivered', value: deliveredPct + '%', accent: 'success' }
+    ];
+    cards.forEach(c => {
+      target.appendChild(el('div', { class: `stat-card stat-card-${c.accent}` }, [
+        el('div', { class: 'stat-value', text: String(c.value) }),
+        el('div', { class: 'stat-label', text: c.label })
+      ]));
+    });
+  },
+
+  statusBars(statusSplit, total) {
+    const target = qs('#status-bars');
+    target.innerHTML = '';
+    if (!total) {
+      target.appendChild(this.emptyNote('No check-ins logged for this range yet.'));
+      return;
+    }
+    statusSplit.forEach(s => {
+      const row = el('div', { class: 'status-row' }, [
+        el('div', { class: 'status-row-label' }, [
+          this.statusChip(s.status),
+          el('span', { class: 'status-row-count', text: `${s.count} · ${s.pct}%` })
+        ]),
+        el('div', { class: 'status-row-track' }, [
+          el('div', { class: 'status-row-fill', style: `width:${s.pct}%; background:${STATUS_COLORS[s.status] || '#7A8899'}` })
+        ])
+      ]);
+      target.appendChild(row);
+    });
+  },
+
+  workstreamTable(rows) {
+    const target = qs('#workstream-table');
+    target.innerHTML = '';
+    if (!rows.length) {
+      target.appendChild(this.emptyNote('No data yet.'));
+      return;
+    }
+    const wrap = el('div', { class: 'table-scroll' });
+    const table = el('table', { class: 'data-table' });
+    const thead = el('thead', {}, [
+      el('tr', {}, ['Workstream', 'Projects', 'Check-ins', 'Blocked (GC)', 'Blocked (EQ)', 'In Progress', 'Delivered']
+        .map(h => el('th', { text: h })))
+    ]);
+    const tbody = el('tbody');
+    rows.forEach(r => {
+      tbody.appendChild(el('tr', {}, [
+        el('td', { text: r.workstream, class: 'cell-strong' }),
+        el('td', { text: String(r.distinctProjects) }),
+        el('td', { text: String(r.checks) }),
+        el('td', { text: String(r.blockedGC), class: r.blockedGC > 0 ? 'cell-warn' : '' }),
+        el('td', { text: String(r.blockedEQ), class: r.blockedEQ > 0 ? 'cell-warn' : '' }),
+        el('td', { text: String(r.inProgress) }),
+        el('td', { text: String(r.delivered), class: r.delivered > 0 ? 'cell-good' : '' })
+      ]));
+    });
+    table.appendChild(thead);
+    table.appendChild(tbody);
+    wrap.appendChild(table);
+    target.appendChild(wrap);
+  },
+
+  currentBoard(rows) {
+    const target = qs('#current-board');
+    target.innerHTML = '';
+    if (!rows.length) {
+      target.appendChild(this.emptyNote('No projects logged yet.'));
+      return;
+    }
+    rows.forEach(r => {
+      target.appendChild(el('div', { class: 'board-card' }, [
+        el('div', { class: 'board-card-top' }, [
+          el('span', { class: 'board-card-ws', text: r.workstream }),
+          this.statusChip(r.status)
+        ]),
+        el('div', { class: 'board-card-project', text: r.project }),
+        el('div', { class: 'board-card-meta', text: `${r.step || '—'} · EQ: ${r.pocEQ || '—'} · GC: ${r.pocGC || '—'}` }),
+        r.update ? el('div', { class: 'board-card-update', text: r.update }) : null,
+        r.nextStep ? el('div', { class: 'board-card-next', text: `→ ${r.nextStep}` }) : null
+      ].filter(Boolean)));
+    });
+  },
+
+  blockerCallout(blockers) {
+    const target = qs('#blocker-callout');
+    target.innerHTML = '';
+    if (!blockers.length) {
+      target.appendChild(this.emptyNote('Nothing currently blocked. Nice.'));
+      return;
+    }
+    blockers.forEach(b => {
+      target.appendChild(el('div', { class: 'blocker-row' }, [
+        el('div', {}, [
+          el('strong', { text: b.project }),
+          el('span', { class: 'blocker-ws', text: ` — ${b.workstream}` })
+        ]),
+        el('div', { class: 'blocker-meta' }, [
+          this.statusChip(b.status),
+          el('span', { class: 'blocker-streak', text: `${b.streakDays} check-in${b.streakDays === 1 ? '' : 's'} running` })
+        ]),
+        b.nextStep ? el('div', { class: 'blocker-next', text: b.nextStep }) : null
+      ].filter(Boolean)));
+    });
+  },
+
+  // ---------------------------------------------------------------
+  // Weekly panel
+  // ---------------------------------------------------------------
+  weekly(data) {
+    qs('#weekly-range-label').textContent = `${formatDateLabel(data.weekStart)} – ${formatDateLabel(data.weekEnd)}`;
+    const target = qs('#weekly-list');
+    target.innerHTML = '';
+    if (!data.workstreams.length) {
+      target.appendChild(this.emptyNote('No activity logged for this week yet.'));
+      return;
+    }
+    data.workstreams.forEach(w => {
+      const card = el('div', { class: 'weekly-card' }, [
+        el('div', { class: 'weekly-card-top' }, [
+          el('span', { class: 'weekly-card-ws', text: w.workstream }),
+          !w.noteSubmitted ? el('span', { class: 'chip chip-sm chip-muted', text: 'No note yet' }) : null
+        ].filter(Boolean)),
+        el('div', { class: 'weekly-stats' }, [
+          this.weeklyStat('Planned', w.plannedCount),
+          this.weeklyStat('Executed', w.executedCount, 'good'),
+          this.weeklyStat('Carry over', w.carryOverCount, w.carryOverCount > 0 ? 'warn' : null)
+        ])
+      ]);
+      if (w.wins) card.appendChild(this.weeklyNoteBlock('Wins', w.wins, 'good'));
+      if (w.priorities) card.appendChild(this.weeklyNoteBlock('Priorities next week', w.priorities));
+      if (w.helpNeeded) card.appendChild(this.weeklyNoteBlock('Help needed', w.helpNeeded, 'warn'));
+      if (w.reasonsForSpillover) card.appendChild(this.weeklyNoteBlock('Why things spilled over', w.reasonsForSpillover, 'warn'));
+      target.appendChild(card);
+    });
+  },
+
+  weeklyStat(label, value, tone) {
+    return el('div', { class: 'weekly-stat' + (tone ? ` weekly-stat-${tone}` : '') }, [
+      el('div', { class: 'weekly-stat-value', text: String(value) }),
+      el('div', { class: 'weekly-stat-label', text: label })
+    ]);
+  },
+
+  weeklyNoteBlock(label, text, tone) {
+    return el('div', { class: 'weekly-note' + (tone ? ` weekly-note-${tone}` : '') }, [
+      el('div', { class: 'weekly-note-label', text: label }),
+      el('div', { class: 'weekly-note-text', text: text })
+    ]);
+  },
+
+  // ---------------------------------------------------------------
+  // Bandwidth panel
+  // ---------------------------------------------------------------
+  bandwidth(data) {
+    qs('#bandwidth-range-label').textContent = `${formatDateLabel(data.from)} – ${formatDateLabel(data.to)} · capacity ${data.capacityHours}h/person`;
+    const target = qs('#bandwidth-list');
+    target.innerHTML = '';
+    if (!data.people.length) {
+      target.appendChild(this.emptyNote('No hours logged for this range yet.'));
+      return;
+    }
+    data.people.forEach(p => {
+      const overloaded = p.executionPct >= 100;
+      const card = el('div', { class: 'bandwidth-card' }, [
+        el('div', { class: 'bandwidth-top' }, [
+          el('span', { class: 'bandwidth-name', text: p.person }),
+          el('span', { class: 'bandwidth-hours', text: `${p.totalHours}h / ${data.capacityHours}h` })
+        ]),
+        el('div', { class: 'status-row-track bandwidth-track' }, [
+          el('div', {
+            class: 'status-row-fill',
+            style: `width:${Math.min(100, p.executionPct)}%; background:${overloaded ? RISK_COLORS.High : 'var(--accent)'}`
+          })
+        ]),
+        el('div', { class: 'bandwidth-meta', text: `${p.executionPct}% utilised${overloaded ? ' · over capacity' : ''}` }),
+        this.bandwidthBreakdown(p.byWorkstream)
+      ]);
+      target.appendChild(card);
+    });
+  },
+
+  bandwidthBreakdown(byWorkstream) {
+    const entries = Object.entries(byWorkstream).filter(([, h]) => h > 0).sort((a, b) => b[1] - a[1]);
+    if (!entries.length) return el('div');
+    return el('div', { class: 'bandwidth-breakdown' },
+      entries.map(([ws, hours]) => el('span', { class: 'breakdown-pill', text: `${ws} · ${Math.round(hours * 10) / 10}h` }))
+    );
+  },
+
+  // ---------------------------------------------------------------
+  // Risk panel
+  // ---------------------------------------------------------------
+  risk(rows) {
+    const target = qs('#risk-grid');
+    target.innerHTML = '';
+    if (!rows.length) {
+      target.appendChild(this.emptyNote('No risk data yet.'));
+      return;
+    }
+    rows.forEach(r => {
+      const card = el('div', { class: 'risk-card' }, [
+        el('div', { class: 'risk-card-top' }, [
+          el('span', { class: 'risk-card-ws', text: r['Workstream'] }),
+          this.riskChip(r['Overall Control'])
+        ]),
+        el('div', { class: 'risk-attrs' }, [
+          this.riskAttr('Documentation', r['Documentation Maturity']),
+          this.riskAttr('Specialized skill', r['Specialized Expertise']),
+          this.riskAttr('Process dependency', r['Process Dependency']),
+          this.riskAttr('Transferability', r['Transferability']),
+          this.riskAttr('Complexity', r['Overall Complexity']),
+          this.riskAttr('Visibility', r['Visibility'])
+        ])
+      ]);
+      target.appendChild(card);
+    });
+  },
+
+  riskAttr(label, value) {
+    return el('div', { class: 'risk-attr' }, [
+      el('span', { class: 'risk-attr-label', text: label }),
+      this.riskChip(value)
+    ]);
+  },
+
+  // ---------------------------------------------------------------
+  // Daily form: one card per work item (a person can touch several
+  // workstreams in a day — one submission carries all of them)
+  // ---------------------------------------------------------------
+  entryCard(entryId, config) {
+    const card = el('div', { class: 'entry-card', 'data-entry-id': String(entryId) });
+
+    const wsSelect = el('select', { class: 'f-workstream', required: 'required' });
+    this.populateSelect(wsSelect, config.workstreams, 'Select a workstream');
+
+    const projectSelect = el('select', { class: 'f-project', required: 'required' });
+    this.populateSelect(projectSelect, [], 'Pick a workstream first');
+
+    const statusSelect = el('select', { class: 'f-status', required: 'required' });
+    this.populateSelect(statusSelect, config.statuses, 'Select status');
+
+    const urgencySelect = el('select', { class: 'f-urgency' });
+    this.populateSelect(urgencySelect, config.urgencies, 'Select urgency');
+
+    const timeBucketSelect = el('select', { class: 'f-time-bucket' });
+    this.populateSelect(timeBucketSelect, config.timeBuckets, 'Optional');
+
+    card.appendChild(el('div', { class: 'entry-card-top' }, [
+      el('span', { class: 'entry-card-index', text: `Work item` }),
+      el('button', { type: 'button', class: 'remove-entry-btn', text: 'Remove' })
+    ]));
+
+    card.appendChild(el('div', { class: 'field' }, [
+      el('label', { text: 'Workstream *' }), wsSelect
+    ]));
+
+    card.appendChild(el('div', { class: 'field project-select-wrap' }, [
+      el('label', { text: 'Project *' }), projectSelect
+    ]));
+    card.appendChild(el('button', { type: 'button', class: 'link-btn f-add-project', text: '+ Add a project not on this list' }));
+    card.appendChild(el('div', { class: 'field hidden new-project-wrap' }, [
+      el('label', { text: 'New project name *' }),
+      el('input', { type: 'text', class: 'f-new-project', placeholder: 'Project name' }),
+      el('button', { type: 'button', class: 'link-btn f-cancel-new-project', text: '← Choose from the list instead' })
+    ]));
+
+    card.appendChild(el('div', { class: 'field-row' }, [
+      el('div', { class: 'field' }, [
+        el('label', { text: 'Stage' }),
+        el('input', { type: 'text', class: 'f-step', list: 'step-suggestions', placeholder: 'e.g. Post Processing — type anything' })
+      ]),
+      el('div', { class: 'field' }, [
+        el('label', { text: 'Urgency' }), urgencySelect
+      ])
+    ]));
+
+    card.appendChild(el('div', { class: 'field' }, [
+      el('label', { text: 'Status *' }), statusSelect
+    ]));
+
+    card.appendChild(el('div', { class: 'field-row' }, [
+      el('div', { class: 'field' }, [
+        el('label', { text: 'POC — EQ' }),
+        el('input', { type: 'text', class: 'f-poc-eq', list: 'poc-eq-list', placeholder: 'Name' })
+      ]),
+      el('div', { class: 'field' }, [
+        el('label', { text: 'POC — GC' }),
+        el('input', { type: 'text', class: 'f-poc-gc', list: 'poc-gc-list', placeholder: 'Name' })
+      ])
+    ]));
+
+    card.appendChild(el('div', { class: 'field' }, [
+      el('label', { text: "Today's update" }),
+      el('textarea', { class: 'f-update', placeholder: 'What happened today' })
+    ]));
+
+    card.appendChild(el('div', { class: 'field' }, [
+      el('label', { text: 'Next step' }),
+      el('textarea', { class: 'f-next-step', placeholder: 'What needs to happen next, and who owns it' })
+    ]));
+
+    card.appendChild(el('div', { class: 'field-row' }, [
+      el('div', { class: 'field' }, [
+        el('label', { text: 'Time bucket' }), timeBucketSelect
+      ])
+    ]));
+    card.appendChild(el('div', { class: 'field-row' }, [
+      el('div', { class: 'field' }, [
+        el('label', { text: 'Est. hours' }),
+        el('input', { type: 'number', class: 'f-est-hours', min: '0', step: '0.5' })
+      ]),
+      el('div', { class: 'field' }, [
+        el('label', { text: 'Actual hours' }),
+        el('input', { type: 'number', class: 'f-actual-hours', min: '0', step: '0.5' })
+      ])
+    ]));
+
+    card.appendChild(el('div', { class: 'field' }, [
+      el('label', { text: 'Comments (optional)' }),
+      el('textarea', { class: 'f-comments' })
+    ]));
+
+    return card;
+  },
+
+  emptyNote(text) {
+    return el('p', { class: 'empty-note', text });
+  }
+};
+
+</script>
+<script>
+// ===== app.js =====
+// App bootstrap and event wiring.
+
+const App = {
+  config: null,
+  activeInsightPanel: 'overview',
+  // Default both weekly-oriented panels to the most recently COMPLETED
+  // week rather than the current (likely still-empty) one — you're
+  // usually reporting on a week that just finished, not one in progress.
+  weeklyWeekStart: addDaysISO(mostRecentMondayISO(), -7),
+  bandwidthWeekStart: addDaysISO(mostRecentMondayISO(), -7),
+
+  async init() {
+    this.wireNav();
+    this.wireInsightSegments();
+    this.wireForm();
+    this.wireWeeklyForm();
+    this.wireBandwidthControls();
+    this.wireDashboardControls();
+
+    this.config = await Api.fetchConfig();
+    if (this.config.offline) {
+      showToast('Using saved project list — live config unavailable.', 'warn');
+    }
+    this.populateForm(this.config);
+    this.populateWeeklyForm(this.config);
+    this.restoreDraft();
+
+    await this.refreshInsightPanel('overview');
+  },
+
+  // ---------------------------------------------------------------
+  // Top-level nav: Log Update <-> Insights
+  // ---------------------------------------------------------------
+  wireNav() {
+    qsa('.nav-button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        qsa('.nav-button').forEach(b => b.classList.remove('nav-active'));
+        qsa('.view').forEach(v => v.classList.remove('view-active'));
+        btn.classList.add('nav-active');
+        qs('#' + btn.dataset.view).classList.add('view-active');
+        if (btn.dataset.view === 'view-insights') this.refreshInsightPanel(this.activeInsightPanel);
+      });
+    });
+  },
+
+  // ---------------------------------------------------------------
+  // Insights sub-nav: Overview / Weekly / Bandwidth / Risk
+  // ---------------------------------------------------------------
+  wireInsightSegments() {
+    qsa('.segment-button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        qsa('.segment-button').forEach(b => b.classList.remove('segment-active'));
+        qsa('.insight-panel').forEach(p => p.classList.remove('insight-panel-active'));
+        btn.classList.add('segment-active');
+        qs('#' + btn.dataset.panel).classList.add('insight-panel-active');
+        this.activeInsightPanel = btn.dataset.panel.replace('panel-', '');
+        this.refreshInsightPanel(this.activeInsightPanel);
+      });
+    });
+  },
+
+  async refreshInsightPanel(panel) {
+    try {
+      if (panel === 'overview') await this.refreshOverview();
+      else if (panel === 'weekly') await this.refreshWeekly();
+      else if (panel === 'bandwidth') await this.refreshBandwidth();
+      else if (panel === 'risk') await this.refreshRisk();
+    } catch (err) {
+      showToast('Could not load data: ' + err.message, 'error');
+    }
+  },
+
+  // ---------------------------------------------------------------
+  // Daily form
+  // ---------------------------------------------------------------
+  // ---------------------------------------------------------------
+  // Daily form: one card per work item. entryCounter gives each card
+  // a stable id so event delegation and draft save/restore can target
+  // the right one even as cards are added/removed.
+  // ---------------------------------------------------------------
+  entryCounter: 0,
+
+  populateForm(config) {
+    const eqList = qs('#poc-eq-list');
+    eqList.innerHTML = '';
+    config.pocEQ.forEach(name => eqList.appendChild(el('option', { value: name })));
+
+    const gcList = qs('#poc-gc-list');
+    gcList.innerHTML = '';
+    config.pocGC.forEach(name => gcList.appendChild(el('option', { value: name })));
+
+    const stepList = qs('#step-suggestions');
+    stepList.innerHTML = '';
+    config.steps.forEach(name => stepList.appendChild(el('option', { value: name })));
+
+    // start with one empty work-item card
+    this.addEntryCard();
+  },
+
+  addEntryCard(prefill) {
+    this.entryCounter++;
+    const card = Render.entryCard(this.entryCounter, this.config);
+    qs('#entries-container').appendChild(card);
+    this.updateRemoveButtons();
+    if (prefill) this.fillEntryCard(card, prefill);
+    return card;
+  },
+
+  updateRemoveButtons() {
+    const cards = qsa('.entry-card');
+    qsa('.remove-entry-btn').forEach(btn => {
+      btn.classList.toggle('hidden', cards.length <= 1);
+    });
+  },
+
+  onEntryWorkstreamChange(card) {
+    const ws = qs('.f-workstream', card).value;
+    const projectSelect = qs('.f-project', card);
+    const projects = (this.config.projectsByWorkstream[ws] || []);
+    Render.populateSelect(projectSelect, projects, projects.length ? 'Select a project' : 'No projects yet — add one below');
+    this.toggleNewProjectField(card, projects.length === 0);
+  },
+
+  toggleNewProjectField(card, isNew) {
+    const wrap = qs('.new-project-wrap', card);
+    const selectWrap = qs('.project-select-wrap', card);
+    const addBtn = qs('.f-add-project', card);
+    const projectSelect = qs('.f-project', card);
+    const newProjectInput = qs('.f-new-project', card);
+
+    wrap.classList.toggle('hidden', !isNew);
+    selectWrap.classList.toggle('hidden', isNew);
+    addBtn.classList.toggle('hidden', isNew);
+
+    // Only one of these two fields should ever be "required" at a time —
+    // leaving the hidden one required is what was blocking submission
+    // with a silent native "please select an item" validation error.
+    projectSelect.required = !isNew;
+    newProjectInput.required = isNew;
+
+    if (isNew) newProjectInput.focus();
+  },
+
+  wireForm() {
+    const form = qs('#daily-form');
+    qs('#field-date').value = todayISO();
+
+    qs('#add-entry-btn').addEventListener('click', () => this.addEntryCard());
+
+    // Event delegation: entries container's contents change over time,
+    // so we bind once at the container and inspect e.target instead of
+    // binding per-card (which would need rebinding on every add/remove).
+    const container = qs('#entries-container');
+
+    container.addEventListener('change', (e) => {
+      const card = e.target.closest('.entry-card');
+      if (!card) return;
+      if (e.target.classList.contains('f-workstream')) this.onEntryWorkstreamChange(card);
+    });
+
+    container.addEventListener('click', (e) => {
+      const card = e.target.closest('.entry-card');
+      if (!card) return;
+      if (e.target.classList.contains('f-add-project')) {
+        this.toggleNewProjectField(card, true);
+      }
+      if (e.target.classList.contains('f-cancel-new-project')) {
+        qs('.f-new-project', card).value = '';
+        this.toggleNewProjectField(card, false);
+      }
+      if (e.target.classList.contains('remove-entry-btn')) {
+        card.remove();
+        this.updateRemoveButtons();
+        this.saveCurrentDraft();
+      }
+    });
+
+    form.addEventListener('input', debounce(() => this.saveCurrentDraft(), 400));
+    container.addEventListener('change', debounce(() => this.saveCurrentDraft(), 200));
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await this.submitForm();
+    });
+  },
+
+  collectEntryData(card) {
+    const usingNewProject = qs('.new-project-wrap', card).classList.contains('hidden') === false;
+    const project = usingNewProject ? qs('.f-new-project', card).value.trim() : qs('.f-project', card).value;
+
+    return {
+      workstream: qs('.f-workstream', card).value,
+      project: project,
+      step: qs('.f-step', card).value.trim(),
+      urgency: qs('.f-urgency', card).value,
+      status: qs('.f-status', card).value,
+      pocEQ: qs('.f-poc-eq', card).value.trim(),
+      pocGC: qs('.f-poc-gc', card).value.trim(),
+      update: qs('.f-update', card).value.trim(),
+      nextStep: qs('.f-next-step', card).value.trim(),
+      timeBucket: qs('.f-time-bucket', card).value,
+      estHours: qs('.f-est-hours', card).value,
+      actualHours: qs('.f-actual-hours', card).value,
+      comments: qs('.f-comments', card).value.trim()
+    };
+  },
+
+  fillEntryCard(card, data) {
+    const map = {
+      workstream: '.f-workstream', step: '.f-step', urgency: '.f-urgency', status: '.f-status',
+      pocEQ: '.f-poc-eq', pocGC: '.f-poc-gc', update: '.f-update', nextStep: '.f-next-step',
+      timeBucket: '.f-time-bucket', estHours: '.f-est-hours', actualHours: '.f-actual-hours',
+      comments: '.f-comments'
+    };
+    if (data.workstream) {
+      qs('.f-workstream', card).value = data.workstream;
+      this.onEntryWorkstreamChange(card);
+      if (data.project) {
+        const knownProjects = this.config.projectsByWorkstream[data.workstream] || [];
+        if (knownProjects.includes(data.project)) {
+          qs('.f-project', card).value = data.project;
+        } else {
+          this.toggleNewProjectField(card, true);
+          qs('.f-new-project', card).value = data.project;
+        }
+      }
+    }
+    Object.entries(map).forEach(([key, selector]) => {
+      if (key === 'workstream') return;
+      const node = qs(selector, card);
+      if (node && data[key]) node.value = data[key];
+    });
+  },
+
+  collectFormData() {
+    return {
+      date: qs('#field-date').value,
+      submittedBy: qs('#field-submitted-by').value.trim(),
+      entries: qsa('.entry-card').map(card => this.collectEntryData(card))
+    };
+  },
+
+  saveCurrentDraft() {
+    saveDraft(this.collectFormData());
+  },
+
+  restoreDraft() {
+    const draft = loadDraft();
+    if (!draft || !draft.entries || !draft.entries.length) return;
+
+    if (draft.date) qs('#field-date').value = draft.date;
+    if (draft.submittedBy) qs('#field-submitted-by').value = draft.submittedBy;
+
+    // Clear the single default card and rebuild one per saved entry
+    qs('#entries-container').innerHTML = '';
+    draft.entries.forEach(entry => this.addEntryCard(entry));
+  },
+
+  async submitForm() {
+    const data = this.collectFormData();
+
+    if (!data.entries.length) {
+      showToast('Add at least one work item.', 'error');
+      return;
+    }
+    const invalidIndex = data.entries.findIndex(e => !e.workstream || !e.project || !e.status);
+    if (invalidIndex !== -1) {
+      showToast(`Work item ${invalidIndex + 1}: workstream, project, and status are required.`, 'error');
+      return;
+    }
+
+    const btn = qs('#submit-btn');
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+
+    try {
+      const result = await Api.submitEntry(data);
+      const count = result.count || data.entries.length;
+      showToast(`Logged ${count} update${count === 1 ? '' : 's'}. Thanks.`, 'success');
+      clearDraft();
+      qs('#entries-container').innerHTML = '';
+      this.addEntryCard();
+      qs('#field-date').value = todayISO();
+    } catch (err) {
+      showToast('Could not save: ' + err.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Log update';
+    }
+  },
+
+  // ---------------------------------------------------------------
+  // Overview panel
+  // ---------------------------------------------------------------
+  wireDashboardControls() {
+    qs('#dashboard-refresh').addEventListener('click', () => this.refreshOverview());
+    qs('#dashboard-range').addEventListener('change', () => this.refreshOverview());
+  },
+
+  async refreshOverview() {
+    const range = qs('#dashboard-range').value;
+    const params = {};
+    if (range !== 'all') {
+      const days = parseInt(range, 10);
+      const from = new Date();
+      from.setDate(from.getDate() - days);
+      params.from = from.toISOString().slice(0, 10);
+    }
+    const data = await Api.fetchDashboard(params);
+    Render.dashboard(data);
+  },
+
+  // ---------------------------------------------------------------
+  // Weekly panel + note form
+  // ---------------------------------------------------------------
+  populateWeeklyForm(config) {
+    Render.populateSelect(qs('#weekly-field-workstream'), config.workstreams, 'Select a workstream');
+    qs('#weekly-field-week-start').value = mostRecentMondayISO();
+  },
+
+  wireWeeklyForm() {
+    qs('#weekly-note-toggle').addEventListener('click', () => {
+      qs('#weekly-note-form-wrap').classList.toggle('hidden');
+    });
+
+    qs('#weekly-note-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        weekStart: qs('#weekly-field-week-start').value,
+        workstream: qs('#weekly-field-workstream').value,
+        submittedBy: qs('#weekly-field-submitted-by').value.trim(),
+        wins: qs('#weekly-field-wins').value.trim(),
+        priorities: qs('#weekly-field-priorities').value.trim(),
+        helpNeeded: qs('#weekly-field-help').value.trim(),
+        reasonsForSpillover: qs('#weekly-field-reasons').value.trim()
+      };
+      if (!payload.workstream) {
+        showToast('Pick a workstream for the weekly note.', 'error');
+        return;
+      }
+      const btn = qs('#weekly-submit-btn');
+      btn.disabled = true;
+      btn.textContent = 'Saving…';
+      try {
+        await Api.submitWeeklyNote(payload);
+        showToast('Weekly note saved.', 'success');
+        qs('#weekly-note-form').reset();
+        qs('#weekly-field-week-start').value = mostRecentMondayISO();
+        qs('#weekly-note-form-wrap').classList.add('hidden');
+        this.refreshWeekly();
+      } catch (err) {
+        showToast('Could not save note: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Save weekly note';
+      }
+    });
+
+    qs('#weekly-prev-week').addEventListener('click', () => {
+      this.weeklyWeekStart = addDaysISO(this.weeklyWeekStart, -7);
+      this.refreshWeekly();
+    });
+    qs('#weekly-next-week').addEventListener('click', () => {
+      this.weeklyWeekStart = addDaysISO(this.weeklyWeekStart, 7);
+      this.refreshWeekly();
+    });
+  },
+
+  async refreshWeekly() {
+    qs('#weekly-range-label').textContent = weekRangeLabel(this.weeklyWeekStart);
+    const data = await Api.fetchWeekly({ weekStart: this.weeklyWeekStart });
+    Render.weekly(data);
+  },
+
+  // ---------------------------------------------------------------
+  // Bandwidth panel
+  // ---------------------------------------------------------------
+  wireBandwidthControls() {
+    qs('#bandwidth-prev-week').addEventListener('click', () => {
+      this.bandwidthWeekStart = addDaysISO(this.bandwidthWeekStart, -7);
+      this.refreshBandwidth();
+    });
+    qs('#bandwidth-next-week').addEventListener('click', () => {
+      this.bandwidthWeekStart = addDaysISO(this.bandwidthWeekStart, 7);
+      this.refreshBandwidth();
+    });
+  },
+
+  async refreshBandwidth() {
+    qs('#bandwidth-range-label').textContent = weekRangeLabel(this.bandwidthWeekStart);
+    const from = this.bandwidthWeekStart;
+    const to = addDaysISO(this.bandwidthWeekStart, 4);
+    const data = await Api.fetchBandwidth({ from, to });
+    Render.bandwidth(data);
+  },
+
+  // ---------------------------------------------------------------
+  // Risk panel
+  // ---------------------------------------------------------------
+  async refreshRisk() {
+    const data = await Api.fetchRisk();
+    Render.risk(data.rows);
+  }
+};
+
+document.addEventListener('DOMContentLoaded', () => App.init());
+window.App = App;
+
+</script>
+</body>
+</html>
