@@ -1284,8 +1284,14 @@ const Render = {
       el('button', { type: 'button', class: 'remove-entry-btn', text: 'Remove' })
     ]));
 
-    card.appendChild(el('div', { class: 'field' }, [
+    card.appendChild(el('div', { class: 'field workstream-select-wrap' }, [
       el('label', { text: 'Workstream *' }), wsSelect
+    ]));
+    card.appendChild(el('button', { type: 'button', class: 'link-btn f-add-workstream', text: '+ Add a workstream not on this list' }));
+    card.appendChild(el('div', { class: 'field hidden new-workstream-wrap' }, [
+      el('label', { text: 'New workstream name *' }),
+      el('input', { type: 'text', class: 'f-new-workstream', placeholder: 'Workstream name' }),
+      el('button', { type: 'button', class: 'link-btn f-cancel-new-workstream', text: '← Choose from the list instead' })
     ]));
 
     card.appendChild(el('div', { class: 'field project-select-wrap' }, [
@@ -1488,6 +1494,33 @@ const App = {
     this.toggleNewProjectField(card, projects.length === 0);
   },
 
+  toggleNewWorkstreamField(card, isNew) {
+    const wrap = qs('.new-workstream-wrap', card);
+    const selectWrap = qs('.workstream-select-wrap', card);
+    const addBtn = qs('.f-add-workstream', card);
+    const wsSelect = qs('.f-workstream', card);
+    const newWorkstreamInput = qs('.f-new-workstream', card);
+
+    wrap.classList.toggle('hidden', !isNew);
+    selectWrap.classList.toggle('hidden', isNew);
+    addBtn.classList.toggle('hidden', isNew);
+
+    // Same one-required-at-a-time rule as the project fields — the
+    // hidden one must not stay required or submission silently fails.
+    wsSelect.required = !isNew;
+    newWorkstreamInput.required = isNew;
+
+    if (isNew) {
+      newWorkstreamInput.focus();
+      // A brand-new workstream can't have any known projects yet, so
+      // the project field should behave exactly as if an existing
+      // workstream with zero projects had been picked.
+      const projectSelect = qs('.f-project', card);
+      Render.populateSelect(projectSelect, [], 'No projects yet — add one below');
+      this.toggleNewProjectField(card, true);
+    }
+  },
+
   toggleNewProjectField(card, isNew) {
     const wrap = qs('.new-project-wrap', card);
     const selectWrap = qs('.project-select-wrap', card);
@@ -1528,6 +1561,14 @@ const App = {
     container.addEventListener('click', (e) => {
       const card = e.target.closest('.entry-card');
       if (!card) return;
+      if (e.target.classList.contains('f-add-workstream')) {
+        this.toggleNewWorkstreamField(card, true);
+      }
+      if (e.target.classList.contains('f-cancel-new-workstream')) {
+        qs('.f-new-workstream', card).value = '';
+        this.toggleNewWorkstreamField(card, false);
+        this.onEntryWorkstreamChange(card);
+      }
       if (e.target.classList.contains('f-add-project')) {
         this.toggleNewProjectField(card, true);
       }
@@ -1552,11 +1593,14 @@ const App = {
   },
 
   collectEntryData(card) {
+    const usingNewWorkstream = qs('.new-workstream-wrap', card).classList.contains('hidden') === false;
+    const workstream = usingNewWorkstream ? qs('.f-new-workstream', card).value.trim() : qs('.f-workstream', card).value;
+
     const usingNewProject = qs('.new-project-wrap', card).classList.contains('hidden') === false;
     const project = usingNewProject ? qs('.f-new-project', card).value.trim() : qs('.f-project', card).value;
 
     return {
-      workstream: qs('.f-workstream', card).value,
+      workstream: workstream,
       project: project,
       step: qs('.f-step', card).value.trim(),
       urgency: qs('.f-urgency', card).value,
@@ -1580,8 +1624,14 @@ const App = {
       comments: '.f-comments'
     };
     if (data.workstream) {
-      qs('.f-workstream', card).value = data.workstream;
-      this.onEntryWorkstreamChange(card);
+      const knownWorkstreams = this.config.workstreams || [];
+      if (knownWorkstreams.includes(data.workstream)) {
+        qs('.f-workstream', card).value = data.workstream;
+        this.onEntryWorkstreamChange(card);
+      } else {
+        this.toggleNewWorkstreamField(card, true);
+        qs('.f-new-workstream', card).value = data.workstream;
+      }
       if (data.project) {
         const knownProjects = this.config.projectsByWorkstream[data.workstream] || [];
         if (knownProjects.includes(data.project)) {
