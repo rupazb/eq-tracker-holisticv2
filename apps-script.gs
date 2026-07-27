@@ -302,6 +302,12 @@ function getConfig() {
 // Mirrors the shape of the weekly Sri email — status split, per-workstream
 // table, current status board, and a "blocked N days running" callout —
 // but computed on demand instead of hand-typed.
+//
+// KEY CHANGE: Blocked projects persist in the dashboard until explicitly
+// unblocked or marked delivered. The time-range filter only affects the
+// "status split" aggregate count; the "current status board" always shows
+// the latest status for each project regardless of date range.
+// "Delivered / Complete" projects are excluded from ongoing views.
 // ---------------------------------------------------------------------
 function readLogRows() {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(LOG_SHEET_NAME);
@@ -343,12 +349,21 @@ function filterByDate(rows, from, to) {
 function getDashboard(params) {
   const from = params.from ? new Date(params.from) : null;
   const to = params.to ? new Date(params.to) : null;
-  const rows = filterByDate(readLogRows(), from, to);
+  
+  // Read ALL log rows (not filtered by date yet)
+  const allRows = readLogRows();
+  
+  // For status split, use only rows within the date range
+  const dateFilteredRows = filterByDate(allRows, from, to);
+  
+  // IMPORTANT: Exclude "Delivered / Complete" from metrics — once delivered,
+  // a project shouldn't keep counting as a check or blocker
+  const activeRows = dateFilteredRows.filter(r => r.status !== 'Delivered / Complete');
 
-  const totalChecks = rows.length;
+  const totalChecks = activeRows.length;
   const byStatus = {};
   STATUS_OPTIONS.forEach(s => byStatus[s] = 0);
-  rows.forEach(r => { if (byStatus[r.status] !== undefined) byStatus[r.status]++; });
+  activeRows.forEach(r => { if (byStatus[r.status] !== undefined) byStatus[r.status]++; });
 
   const statusSplit = STATUS_OPTIONS.map(s => ({
     status: s,
@@ -356,9 +371,9 @@ function getDashboard(params) {
     pct: totalChecks ? Math.round((byStatus[s] / totalChecks) * 100) : 0
   }));
 
-  // Per-workstream rollup
+  // Per-workstream rollup (also exclude delivered)
   const wsMap = {};
-  rows.forEach(r => {
+  activeRows.forEach(r => {
     if (!wsMap[r.workstream]) {
       wsMap[r.workstream] = { workstream: r.workstream, projects: new Set(), checks: 0, blockedGC: 0, blockedEQ: 0, delivered: 0, inProgress: 0 };
     }
@@ -367,7 +382,6 @@ function getDashboard(params) {
     w.checks++;
     if (r.status === 'Blocked - GC') w.blockedGC++;
     else if (r.status === 'Blocked - EQ') w.blockedEQ++;
-    else if (r.status === 'Delivered / Complete') w.delivered++;
     else if (r.status === 'In Progress') w.inProgress++;
   });
   const byWorkstream = Object.values(wsMap).map(w => ({
@@ -380,9 +394,18 @@ function getDashboard(params) {
     inProgress: w.inProgress
   }));
 
-  // Current status board: latest entry per (workstream, project)
+  // Current status board: latest entry per (workstream, project) from ALL time,
+  // excluding delivered projects. This means a project blocked on 13/07/26 will
+  // keep showing as blocked on the dashboard until it's unblocked or delivered.
   const latestMap = {};
-  rows.forEach(r => {
+  allRows.forEach(r => {
+    // Skip delivered entries — once delivered, don't show the project anymore
+    if (r.status === 'Delivered / Complete') {
+      // If a project is marked delivered, remove it from the board
+      const key = r.workstream + '||' + r.project;
+      delete latestMap[key];
+      return;
+    }
     const key = r.workstream + '||' + r.project;
     const existing = latestMap[key];
     if (!existing || new Date(r.timestamp) > new Date(existing.timestamp)) {
@@ -391,12 +414,13 @@ function getDashboard(params) {
   });
   const currentBoard = Object.values(latestMap).sort((a, b) => a.workstream.localeCompare(b.workstream));
 
-  // Blocker callout: projects currently Blocked-GC, with how many of their
-  // last N logged days were also blocked (consecutive-blocked streak)
+  // Blocker callout: projects currently Blocked-GC or Blocked-EQ, with how many of their
+  // last N logged days were also blocked (consecutive-blocked streak).
+  // Uses ALL historical entries, not just the date range.
   const blockedNow = currentBoard.filter(r => r.status === 'Blocked - GC' || r.status === 'Blocked - EQ');
   const blockers = blockedNow.map(b => {
-    const history = rows
-      .filter(r => r.workstream === b.workstream && r.project === b.project)
+    const history = allRows
+      .filter(r => r.workstream === b.workstream && r.project === b.project && r.status !== 'Delivered / Complete')
       .sort((a, c) => new Date(c.date) - new Date(a.date));
     let streak = 0;
     for (const h of history) {
