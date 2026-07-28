@@ -550,7 +550,10 @@
   <!-- ============================= LOG UPDATE ============================= -->
   <section id="view-form" class="view view-active">
     <div class="card">
-      <h2>Log today's status</h2>
+      <div class="card-header-row">
+        <h2>Log today's status</h2>
+        <button type="button" class="icon-btn" id="refresh-config-btn" title="Pull the latest workstreams/projects from the Config sheet">↻ Refresh options</button>
+      </div>
       <p class="form-intro">Add one card per workstream or project you touched today, then submit once.</p>
       <form id="daily-form">
 
@@ -1005,9 +1008,16 @@ const Api = {
 
 const Render = {
   populateSelect(select, options, placeholder) {
+    const previousValue = select.value;
     select.innerHTML = '';
     if (placeholder) select.appendChild(el('option', { value: '', text: placeholder }));
     options.forEach(opt => select.appendChild(el('option', { value: opt, text: opt })));
+    // Preserve whatever was already selected if it's still a valid option —
+    // matters when this is called to silently refresh dropdowns in the
+    // background (new Config sheet entries) while someone's mid-entry.
+    if (previousValue && options.includes(previousValue)) {
+      select.value = previousValue;
+    }
   },
 
   statusChip(status) {
@@ -1435,8 +1445,80 @@ const App = {
     this.populateForm(this.config);
     this.populateWeeklyForm(this.config);
     this.restoreDraft();
+    this.wireConfigRefresh();
+    this.startConfigAutoRefresh();
 
     await this.refreshInsightPanel('overview');
+  },
+
+  // ---------------------------------------------------------------
+  // Config sheet <-> dropdown sync. Adding a workstream/project/POC
+  // directly in the Config sheet (not just through "+ Add..." in the
+  // form) shows up here too — polled in the background, plus a manual
+  // refresh button for "I just added it, show me now."
+  // ---------------------------------------------------------------
+  wireConfigRefresh() {
+    const btn = qs('#refresh-config-btn');
+    if (btn) btn.addEventListener('click', () => this.refreshConfigSilently(true));
+  },
+
+  startConfigAutoRefresh() {
+    setInterval(() => this.refreshConfigSilently(false), 2 * 60 * 1000); // every 2 min
+  },
+
+  async refreshConfigSilently(showFeedback) {
+    try {
+      const fresh = await Api.fetchConfig();
+      if (fresh.offline) {
+        if (showFeedback) showToast('Could not refresh — using saved list.', 'warn');
+        return;
+      }
+      this.applyRefreshedConfig(fresh);
+      if (showFeedback) showToast('Dropdown options refreshed.', 'success');
+    } catch (err) {
+      if (showFeedback) showToast('Could not refresh options: ' + err.message, 'error');
+    }
+  },
+
+  applyRefreshedConfig(freshConfig) {
+    this.config = freshConfig;
+
+    const eqList = qs('#poc-eq-list');
+    eqList.innerHTML = '';
+    freshConfig.pocEQ.forEach(name => eqList.appendChild(el('option', { value: name })));
+
+    const gcList = qs('#poc-gc-list');
+    gcList.innerHTML = '';
+    freshConfig.pocGC.forEach(name => gcList.appendChild(el('option', { value: name })));
+
+    const stepList = qs('#step-suggestions');
+    if (stepList) {
+      stepList.innerHTML = '';
+      freshConfig.steps.forEach(name => stepList.appendChild(el('option', { value: name })));
+    }
+
+    // Refresh each existing card's dropdowns in place — but never touch a
+    // card that's mid-"add new workstream/project", so nobody's half-typed
+    // entry gets yanked out from under them by a background refresh.
+    qsa('.entry-card').forEach(card => {
+      const inNewWorkstreamMode = !qs('.new-workstream-wrap', card).classList.contains('hidden');
+      if (inNewWorkstreamMode) return;
+
+      const wsSelect = qs('.f-workstream', card);
+      Render.populateSelect(wsSelect, freshConfig.workstreams, 'Select a workstream');
+
+      const inNewProjectMode = !qs('.new-project-wrap', card).classList.contains('hidden');
+      if (inNewProjectMode) return;
+
+      const ws = wsSelect.value;
+      if (!ws) return;
+      const projectSelect = qs('.f-project', card);
+      const projects = freshConfig.projectsByWorkstream[ws] || [];
+      Render.populateSelect(projectSelect, projects, projects.length ? 'Select a project' : 'No projects yet — add one below');
+    });
+
+    const weeklyWsSelect = qs('#weekly-field-workstream');
+    if (weeklyWsSelect) Render.populateSelect(weeklyWsSelect, freshConfig.workstreams, 'Select a workstream');
   },
 
   // ---------------------------------------------------------------
