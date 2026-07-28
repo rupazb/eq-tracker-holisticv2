@@ -407,6 +407,19 @@
   .board-card-update { font-size: 13px; margin-bottom: 4px; color: var(--text); }
   .board-card-next { font-size: 13px; color: var(--accent); }
 
+  .delivered-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--border-soft);
+    font-size: 13px;
+  }
+  .delivered-row:last-child { border-bottom: none; }
+  .delivered-project { font-weight: 600; color: var(--text); }
+  .delivered-ws { color: var(--text-faint); }
+  .delivered-date { font-family: var(--mono); font-size: 11.5px; color: var(--success); flex-shrink: 0; margin-left: 12px; }
+
   .blocker-row {
     border-left: 3px solid var(--danger);
     padding: 9px 0 9px 12px;
@@ -607,6 +620,11 @@
       <div class="card">
         <h2>Current status board</h2>
         <div id="current-board"></div>
+      </div>
+
+      <div class="card">
+        <h2>Delivered</h2>
+        <div id="delivered-board"></div>
       </div>
     </div>
 
@@ -1018,6 +1036,7 @@ const Render = {
     this.statusBars(data.statusSplit, data.totalChecks);
     this.workstreamTable(data.byWorkstream);
     this.currentBoard(data.currentBoard);
+    this.deliveredBoard(data.deliveredProjects || []);
     this.blockerCallout(data.blockers);
   },
 
@@ -1112,6 +1131,25 @@ const Render = {
         r.update ? el('div', { class: 'board-card-update', text: r.update }) : null,
         r.nextStep ? el('div', { class: 'board-card-next', text: `→ ${r.nextStep}` }) : null
       ].filter(Boolean)));
+    });
+  },
+
+  deliveredBoard(rows) {
+    const target = qs('#delivered-board');
+    if (!target) return; // guards against index.html not yet having this container
+    target.innerHTML = '';
+    if (!rows.length) {
+      target.appendChild(this.emptyNote('Nothing delivered yet.'));
+      return;
+    }
+    rows.forEach(r => {
+      target.appendChild(el('div', { class: 'delivered-row' }, [
+        el('div', {}, [
+          el('span', { class: 'delivered-project', text: r.project }),
+          el('span', { class: 'delivered-ws', text: ` — ${r.workstream}` })
+        ]),
+        el('span', { class: 'delivered-date', text: formatDateLabel(r.date) })
+      ]));
     });
   },
 
