@@ -420,6 +420,92 @@
   .delivered-ws { color: var(--text-faint); }
   .delivered-date { font-family: var(--mono); font-size: 11.5px; color: var(--success); flex-shrink: 0; margin-left: 12px; }
 
+  /* Kanban board */
+  .board-columns {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    margin-top: 4px;
+  }
+  .board-column {
+    flex: 0 0 240px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-sm);
+    padding: 10px;
+  }
+  .board-column-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding: 0 2px;
+  }
+  .board-column-count { font-family: var(--mono); font-size: 12px; color: var(--text-faint); }
+  .board-column-cards { display: flex; flex-direction: column; gap: 8px; }
+  .kanban-card {
+    background: var(--card);
+    border: 1px solid var(--border-soft);
+    border-radius: 8px;
+    padding: 10px;
+  }
+  .kanban-card-ws { font-size: 10px; text-transform: uppercase; letter-spacing: 0.03em; color: var(--text-faint); }
+  .kanban-card-project { font-weight: 650; font-size: 13.5px; margin: 2px 0 4px; }
+  .kanban-card-meta { font-size: 11.5px; color: var(--text-soft); }
+  .kanban-card-next { font-size: 11.5px; color: var(--accent); margin-top: 4px; }
+
+  /* GC View */
+  .gc-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  .gc-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .gc-card-ws { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-faint); }
+  .gc-card-project { font-weight: 650; font-size: 16px; margin-bottom: 4px; }
+  .gc-card-meta { font-size: 12.5px; color: var(--text-soft); margin-bottom: 8px; }
+  .gc-card-update { font-size: 13.5px; margin-bottom: 6px; color: var(--text); }
+  .gc-card-next { font-size: 13.5px; color: var(--warn); margin-bottom: 10px; }
+
+  .comment-thread { margin: 10px 0; border-top: 1px solid var(--border-soft); padding-top: 10px; }
+  .comment-thread-empty { font-size: 12.5px; color: var(--text-faint); margin: 10px 0; border-top: 1px solid var(--border-soft); padding-top: 10px; }
+  .comment-row { margin-bottom: 10px; }
+  .comment-row:last-child { margin-bottom: 0; }
+  .comment-meta { display: flex; gap: 8px; align-items: baseline; margin-bottom: 2px; }
+  .comment-author { font-size: 12.5px; font-weight: 650; color: var(--text); }
+  .comment-time { font-size: 11px; color: var(--text-faint); font-family: var(--mono); }
+  .comment-text { font-size: 13px; color: var(--text-soft); line-height: 1.4; }
+
+  .gc-comment-form { display: flex; gap: 8px; align-items: flex-end; margin-top: 8px; }
+  .gc-comment-form .gc-comment-input {
+    flex: 1;
+    min-height: 40px;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-elevated);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 13px;
+    resize: vertical;
+  }
+  .gc-comment-submit {
+    padding: 9px 14px;
+    background: var(--accent);
+    color: #06231D;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 650;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .gc-comment-submit:hover { filter: brightness(1.08); }
+  .gc-comment-submit:disabled { opacity: 0.5; cursor: default; }
+
   .blocker-row {
     border-left: 3px solid var(--danger);
     padding: 9px 0 9px 12px;
@@ -545,6 +631,7 @@
   <nav class="top-nav">
     <button class="nav-button nav-active" data-view="view-form">Log Update</button>
     <button class="nav-button" data-view="view-insights">Insights</button>
+    <button class="nav-button" data-view="view-gc">GC View</button>
   </nav>
 
   <!-- ============================= LOG UPDATE ============================= -->
@@ -563,8 +650,8 @@
             <input type="date" id="field-date" required>
           </div>
           <div class="field">
-            <label for="field-submitted-by">Your name</label>
-            <input type="text" id="field-submitted-by" placeholder="e.g. Radha">
+            <label for="field-submitted-by">Your name <span class="req">*</span></label>
+            <input type="text" id="field-submitted-by" placeholder="e.g. Radha" required>
           </div>
         </div>
 
@@ -588,6 +675,7 @@
       <button class="segment-button segment-active" data-panel="panel-overview">Overview</button>
       <button class="segment-button" data-panel="panel-weekly">Weekly</button>
       <button class="segment-button" data-panel="panel-bandwidth">Bandwidth</button>
+      <button class="segment-button" data-panel="panel-board">Board</button>
       <button class="segment-button" data-panel="panel-risk">Risk</button>
     </div>
 
@@ -644,8 +732,8 @@
               <input type="date" id="weekly-field-week-start" required>
             </div>
             <div class="field">
-              <label for="weekly-field-submitted-by">Your name</label>
-              <input type="text" id="weekly-field-submitted-by" placeholder="e.g. Rupaz">
+              <label for="weekly-field-submitted-by">Your name <span class="req">*</span></label>
+              <input type="text" id="weekly-field-submitted-by" placeholder="e.g. Rupaz" required>
             </div>
           </div>
           <div class="field">
@@ -700,6 +788,15 @@
       </div>
     </div>
 
+    <!-- Board (Kanban) -->
+    <div id="panel-board" class="insight-panel">
+      <div class="card">
+        <h2>Board</h2>
+        <p class="form-intro">Same data as the Current status board, laid out by status. Read-only for now.</p>
+        <div id="board-columns" class="board-columns"></div>
+      </div>
+    </div>
+
     <!-- Risk -->
     <div id="panel-risk" class="insight-panel">
       <div class="card">
@@ -708,6 +805,22 @@
       </div>
     </div>
 
+  </section>
+
+  <!-- ============================== GC VIEW =============================== -->
+  <section id="view-gc" class="view">
+    <div class="card">
+      <div class="card-header-row">
+        <h2>Waiting on GC</h2>
+        <button type="button" class="icon-btn" id="gc-view-refresh">Refresh</button>
+      </div>
+      <p class="form-intro">Everything currently blocked on a GC confirmation. Add a comment to confirm, push back, or give an ETA — no need to email separately.</p>
+      <div class="field" style="margin-top:14px;">
+        <label for="gc-view-author">Your name (shown on your comments) <span class="req">*</span></label>
+        <input type="text" id="gc-view-author" placeholder="e.g. Emma" required>
+      </div>
+    </div>
+    <div id="gc-view-list"></div>
   </section>
 
 </main>
@@ -721,7 +834,7 @@
 // 1. Deploy apps-script.gs as a Web App (see README.md).
 // 2. Paste the deployment URL below. It looks like:
 //    https://script.google.com/macros/s/AKfycb.../exec
-const API_URL = 'https://script.google.com/macros/s/AKfycbw_JcaOFzQrRqMLd3NEu_SN0bQ8cBGIsHvkepLBm88I19eNXde6_09c315I0J0rZVuP/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbzPcMy2d6ECyvIHfIEO-6J0ph66j5Q-fxG3laueerA4fqpfnOb4tueb300AGJG5Rw5M/exec';
 
 // Used only until the live Config tab loads (first paint, or if the
 // network call fails). Keeps the form usable even offline for a moment.
@@ -766,6 +879,10 @@ const FALLBACK_CONFIG = {
 // Same constants as the backend's bandwidth calc — used for the
 // client-side capacity label before live data loads.
 const WEEKLY_CAPACITY_HOURS = 40;
+
+// Canonical status order — must match STATUS_OPTIONS in apps-script.gs.
+// Used for the Board panel's column order.
+const STATUS_OPTIONS = ['In Progress', 'Blocked - GC', 'Blocked - EQ', 'Delivered / Complete'];
 
 // Status -> colour, used consistently across the form and dashboard
 const STATUS_COLORS = {
@@ -993,6 +1110,23 @@ const Api = {
     const res = await fetch(API_URL, {
       method: 'POST',
       body: JSON.stringify({ type: 'weekly', ...payload })
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Submit failed');
+    return data;
+  },
+
+  async fetchComments() {
+    const res = await fetch(`${API_URL}?action=comments`);
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Comments request failed');
+    return data;
+  },
+
+  async submitComment(payload) {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ type: 'comment', ...payload })
     });
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || 'Submit failed');
@@ -1413,6 +1547,87 @@ const Render = {
 
   emptyNote(text) {
     return el('p', { class: 'empty-note', text });
+  },
+
+  // ---------------------------------------------------------------
+  // Board panel (Kanban) — same currentBoard data as Overview, laid
+  // out as status columns instead of a list. Read-only for now:
+  // dragging to change status is a real workflow action, not a casual
+  // reorder, so it needs a confirm step this version doesn't have yet.
+  // ---------------------------------------------------------------
+  board(currentBoard) {
+    const target = qs('#board-columns');
+    target.innerHTML = '';
+    STATUS_OPTIONS.forEach(status => {
+      const items = currentBoard.filter(r => r.status === status);
+      const column = el('div', { class: 'board-column' }, [
+        el('div', { class: 'board-column-header' }, [
+          this.statusChip(status),
+          el('span', { class: 'board-column-count', text: String(items.length) })
+        ]),
+        el('div', { class: 'board-column-cards' },
+          items.length ? items.map(r => this.kanbanCard(r)) : [this.emptyNote('Nothing here.')]
+        )
+      ]);
+      target.appendChild(column);
+    });
+  },
+
+  kanbanCard(r) {
+    return el('div', { class: 'kanban-card' }, [
+      el('div', { class: 'kanban-card-ws', text: r.workstream }),
+      el('div', { class: 'kanban-card-project', text: r.project }),
+      el('div', { class: 'kanban-card-meta', text: `${r.step || '—'} · EQ: ${r.pocEQ || '—'} · GC: ${r.pocGC || '—'}` }),
+      r.nextStep ? el('div', { class: 'kanban-card-next', text: `→ ${r.nextStep}` }) : null
+    ].filter(Boolean));
+  },
+
+  // ---------------------------------------------------------------
+  // GC View — a focused, read-mostly page: only what's currently
+  // waiting on GC, with a comment thread per item so GC can confirm
+  // or push back without needing Log write access. This is a UX-level
+  // scoped view, not a security boundary (see apps-script.gs notes).
+  // ---------------------------------------------------------------
+  gcView(currentBoard, commentsByKey) {
+    const target = qs('#gc-view-list');
+    target.innerHTML = '';
+    const blocked = currentBoard.filter(r => r.status === 'Blocked - GC');
+    if (!blocked.length) {
+      target.appendChild(this.emptyNote("Nothing waiting on GC right now — all caught up."));
+      return;
+    }
+    blocked.forEach(r => {
+      const key = r.workstream + '||' + r.project;
+      const comments = commentsByKey[key] || [];
+      target.appendChild(el('div', { class: 'gc-card' }, [
+        el('div', { class: 'gc-card-top' }, [
+          el('span', { class: 'gc-card-ws', text: r.workstream }),
+          this.statusChip(r.status)
+        ]),
+        el('div', { class: 'gc-card-project', text: r.project }),
+        el('div', { class: 'gc-card-meta', text: `Stage: ${r.step || '—'} · EQ contact: ${r.pocEQ || '—'}` }),
+        r.update ? el('div', { class: 'gc-card-update', text: r.update }) : null,
+        r.nextStep ? el('div', { class: 'gc-card-next', text: `Needed: ${r.nextStep}` }) : null,
+        this.commentThread(comments),
+        el('div', { class: 'gc-comment-form', 'data-key': key, 'data-workstream': r.workstream, 'data-project': r.project }, [
+          el('textarea', { class: 'gc-comment-input', placeholder: 'Add an update or confirmation…' }),
+          el('button', { type: 'button', class: 'gc-comment-submit', text: 'Post' })
+        ])
+      ].filter(Boolean)));
+    });
+  },
+
+  commentThread(comments) {
+    if (!comments.length) return el('div', { class: 'comment-thread-empty', text: 'No comments yet.' });
+    return el('div', { class: 'comment-thread' }, comments.map(c =>
+      el('div', { class: 'comment-row' }, [
+        el('div', { class: 'comment-meta' }, [
+          el('span', { class: 'comment-author', text: c.author || 'Someone' }),
+          el('span', { class: 'comment-time', text: formatDateLabel(c.timestamp) })
+        ]),
+        el('div', { class: 'comment-text', text: c.comment })
+      ])
+    ));
   }
 };
 
@@ -1447,6 +1662,7 @@ const App = {
     this.restoreDraft();
     this.wireConfigRefresh();
     this.startConfigAutoRefresh();
+    this.wireGCView();
 
     await this.refreshInsightPanel('overview');
   },
@@ -1532,12 +1748,13 @@ const App = {
         btn.classList.add('nav-active');
         qs('#' + btn.dataset.view).classList.add('view-active');
         if (btn.dataset.view === 'view-insights') this.refreshInsightPanel(this.activeInsightPanel);
+        if (btn.dataset.view === 'view-gc') this.refreshGCView();
       });
     });
   },
 
   // ---------------------------------------------------------------
-  // Insights sub-nav: Overview / Weekly / Bandwidth / Risk
+  // Insights sub-nav: Overview / Weekly / Bandwidth / Board / Risk
   // ---------------------------------------------------------------
   wireInsightSegments() {
     qsa('.segment-button').forEach(btn => {
@@ -1557,6 +1774,7 @@ const App = {
       if (panel === 'overview') await this.refreshOverview();
       else if (panel === 'weekly') await this.refreshWeekly();
       else if (panel === 'bandwidth') await this.refreshBandwidth();
+      else if (panel === 'board') await this.refreshBoard();
       else if (panel === 'risk') await this.refreshRisk();
     } catch (err) {
       showToast('Could not load data: ' + err.message, 'error');
@@ -1796,6 +2014,11 @@ const App = {
   async submitForm() {
     const data = this.collectFormData();
 
+    if (!data.submittedBy) {
+      showToast('Your name is required before submitting.', 'error');
+      qs('#field-submitted-by').focus();
+      return;
+    }
     if (!data.entries.length) {
       showToast('Add at least one work item.', 'error');
       return;
@@ -1871,6 +2094,11 @@ const App = {
         helpNeeded: qs('#weekly-field-help').value.trim(),
         reasonsForSpillover: qs('#weekly-field-reasons').value.trim()
       };
+      if (!payload.submittedBy) {
+        showToast('Your name is required before submitting.', 'error');
+        qs('#weekly-field-submitted-by').focus();
+        return;
+      }
       if (!payload.workstream) {
         showToast('Pick a workstream for the weekly note.', 'error');
         return;
@@ -1937,6 +2165,76 @@ const App = {
   async refreshRisk() {
     const data = await Api.fetchRisk();
     Render.risk(data.rows);
+  },
+
+  // ---------------------------------------------------------------
+  // Board panel (Kanban) — reuses the same all-time currentBoard data
+  // as Overview, just laid out as status columns.
+  // ---------------------------------------------------------------
+  async refreshBoard() {
+    const data = await Api.fetchDashboard({});
+    Render.board(data.currentBoard);
+  },
+
+  // ---------------------------------------------------------------
+  // GC View — focused list of everything currently blocked on GC,
+  // with a comment thread per item.
+  // ---------------------------------------------------------------
+  wireGCView() {
+    const list = qs('#gc-view-list');
+    if (!list) return;
+
+    list.addEventListener('click', async (e) => {
+      if (!e.target.classList.contains('gc-comment-submit')) return;
+      const formWrap = e.target.closest('.gc-comment-form');
+      const textarea = qs('.gc-comment-input', formWrap);
+      const comment = textarea.value.trim();
+      if (!comment) return;
+
+      const author = (qs('#gc-view-author')?.value || '').trim();
+      if (!author) {
+        showToast('Your name is required before posting a comment.', 'error');
+        qs('#gc-view-author')?.focus();
+        return;
+      }
+      e.target.disabled = true;
+      try {
+        await Api.submitComment({
+          workstream: formWrap.dataset.workstream,
+          project: formWrap.dataset.project,
+          author: author,
+          comment: comment
+        });
+        textarea.value = '';
+        showToast('Comment posted.', 'success');
+        await this.refreshGCView();
+      } catch (err) {
+        showToast('Could not post comment: ' + err.message, 'error');
+      } finally {
+        e.target.disabled = false;
+      }
+    });
+
+    const refreshBtn = qs('#gc-view-refresh');
+    if (refreshBtn) refreshBtn.addEventListener('click', () => this.refreshGCView());
+  },
+
+  async refreshGCView() {
+    try {
+      const [dashboard, comments] = await Promise.all([
+        Api.fetchDashboard({}),
+        Api.fetchComments()
+      ]);
+      const commentsByKey = {};
+      comments.rows.forEach(c => {
+        const key = c.workstream + '||' + c.project;
+        if (!commentsByKey[key]) commentsByKey[key] = [];
+        commentsByKey[key].push(c);
+      });
+      Render.gcView(dashboard.currentBoard, commentsByKey);
+    } catch (err) {
+      showToast('Could not load GC view: ' + err.message, 'error');
+    }
   }
 };
 
