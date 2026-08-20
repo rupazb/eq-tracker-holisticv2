@@ -1,145 +1,170 @@
-# GIS Project Services — Status Tracker (v2)
+# GIS Project Services — Status Tracker (v3)
 
-A one-stop replacement for the current Excel workbook. Everyone logs their
-status through one form; that write lands directly in a Google Sheet;
-every dashboard view — daily, weekly, bandwidth, risk — is computed live
-from that same sheet, matching the views in your latest workbook (View 1 /
-View 2 / View 3 / Control Mapping). Nobody hand-copies rows between tabs.
+A one-stop replacement for the Excel workbook. Everyone logs their status
+through one form; that write lands directly in a Google Sheet; every
+dashboard view is computed live from that same sheet. Nobody hand-copies
+rows between tabs.
 
-## What's in v2
+## What changed in v3
 
-Your updated workbook added three dashboard views and some new
-workstreams. Here's how each maps onto this system:
+Straight from your review notes:
 
-| Your workbook | This tool | Where |
-|---|---|---|
-| View 1 — Daily update | The Log sheet + Log Update form | Same as v1, unchanged |
-| View 2 — Weekly update | **Weekly** panel | Planned / Executed / Carry-over are auto-computed from the Log. Wins / Priorities / Help needed / Reasons for spillover are judgment calls, so they're captured through a short once-a-week note form (not derivable from daily logs) |
-| View 3 — Weekly Time Estimate | **Bandwidth** panel | Per-person hours by workstream, computed from the `Actual Hours` field already in the daily form, against a 40hr/week capacity |
-| Control Mapping | **Risk** panel | Static reference table — workstream complexity/visibility ratings, editable directly in the Risk sheet |
-| New workstreams (WS1, WS3, Peer Review QA) | Added to Config seed | Already in the dropdowns |
+| Note | What changed |
+|---|---|
+| "A field to capture month" | Not a new input — Month is derived from Date automatically wherever it's needed, so it can't drift out of sync with the actual date logged. |
+| "R&D and GIS ops" | Added as a **per-workstream** property (not per log entry) — new **WorkstreamCategory** tab, one row per workstream, `Ops` or `R&D`. Seeded with `WS1 - Paddock Mapping & Digitizing` and `WS3: ALS to CPC` as R&D, everything else Ops — edit anytime as it evolves. |
+| "Remove POC GC and EQ" | **Skipped for now** per your call — GC View is built around POC-GC, so this needs its own follow-up rather than a quick removal. |
+| "Prefilled estimated hours based on step" | New **StepEstimates** tab (`Step` → `Est Hours`). When the Stage field matches a known step, Est Hours pre-fills — but only if you haven't already typed something, and you can always override it. Seeded from your actual historical averages where there was enough data (Post Processing, Processing, Peer Review QA, etc.); the rest are rough starting placeholders. |
+| "Rework and Audit triggered rework" | Added **"Audit Triggered Rework"** as a new Time Bucket option, alongside the existing "Rework". |
+| "Carry over in place of Blocked - EQ, reasons for that" | **"Blocked - EQ" is renamed "Carry Over"** across the whole app. A "Reason for carry over" field now appears on the form whenever that status is picked. Any historical "Blocked - EQ" rows still read back correctly (mapped automatically). |
+| "No need to track check-ins" | Removed the "Check-ins logged" stat card and the Check-ins column from the workstream table. |
+| "Optimise for delivered list — a lot of already-delivered projects" | The Delivered section now defaults to the **last 14 days** instead of all-time, with a **"Show all"** toggle to see the full history when you want it. |
+| "Weekly snapshot — check and optimise for accuracy" | Reviewed `getWeeklyUpdate`; logic is unchanged (touched last week + this week + not delivered = carried over) but now clearly documented as a different, broader idea from the new per-item "Carry Over" *status* — see the code comment in `apps-script.gs`. Worth a look together against a real week if the numbers still feel off; that's a one-function tweak. |
+| "Bandwidth at two levels — R&D/Ops and Ops workstreams" | The Bandwidth panel now shows a **team-wide R&D vs Ops split** at the top (using the new WorkstreamCategory tab), and keeps the existing per-person / per-workstream breakdown below it for drilling into workstreams. |
+| New weekly delivered-projects list | New **Delivered** panel in Insights (renamed "Weekly delivery & carry-over") — same week-nav pattern as Bandwidth, lists project names delivered that week, grouped by workstream. |
+| New weekly carry-over list | Same panel, second card — project names logged with status **Carry Over** that week, grouped by workstream, with the reason shown under each project. Direct counterpart to the delivered list, sharing the same week nav. |
 
-## How it works
+## v3.1 — Miscellaneous filtered, Thu-Wed work week, current week by default
 
-```
- Anyone on the team          Google Sheet                    This page
- fills out the daily   --->  Log (source of truth)    --->   Insights:
- form (index.html)           + Config (dropdowns)             Overview / Weekly /
-                              + WeeklyNotes (weekly notes)     Bandwidth / Risk —
-                              + Risk (static register)         all computed live
-```
+| Ask | What changed |
+|---|---|
+| "Miscellaneous filtered out from insights" | Log Update form still offers it (still a valid catch-all to log against), but it's now excluded from every computed Insights view — Overview, Weekly, Bandwidth, Delivered, Carry-over, Board. |
+| "Figure out a way to make it Thursday to Thursday" | The work week now runs **Thursday through the following Wednesday** everywhere (Weekly, Bandwidth, Delivered/Carry-over) instead of Monday-Friday. Sat/Sun sit as off-days in the middle of that span and are excluded from capacity — a full week still comes out to exactly 40h, not 56h, because capacity is now driven by an actual weekday count instead of raw calendar days. |
+| "Show the current week we are in" | All three weekly panels (Weekly, Bandwidth, Delivered/Carry-over) now default to the **current** Thu-Wed week on load, instead of the previously-completed one. |
+| Autofill for estimated time | No changes requested — current behavior (pre-fills Est Hours from Stage on blur, only if empty) stays as-is. |
+| Carry-over snapshot for weekly updates | Already covered by the "Carried over this week" card added to the Delivered panel — nothing further needed. |
 
-- `apps-script.gs` — backend. Deployed as a Google Apps Script Web App.
-  Handles form submissions (`doPost`, both daily entries and weekly notes)
-  and serves every dashboard view as JSON (`doGet`).
-- `index.html` — the entire frontend, **self-contained** (all JS inlined,
-  no external `<script src>` files to load). Open it directly, host it
-  on GitHub Pages, drop it on any web server, or paste it into an Apps
-  Script HTML file — it works the same everywhere, with nothing else to
-  bring along.
-- `app.js` / `render.js` / `api.js` / `utils.js` / `config.js` — the same
-  code as separate files, kept for convenience if you'd rather edit and
-  maintain it in pieces. If you edit these, re-inline them into
-  `index.html` before deploying (or point `index.html` back at them with
-  `<script src="...">` tags) — `index.html` doesn't read these files on
-  its own.
+One thing worth knowing: the "Weekly note" form's date field still needs to land on a Thursday to match up with the Weekly panel's lookup (it compares the note's week-start string against the computed week-start string exactly). It now defaults to the current week's Thursday and the label says so — but if someone manually picks a different date, make sure it's a Thursday or the note won't show up under the week they meant.
 
-## What's new in the UI
 
-Redesigned as a dark, dashboard-style app rather than a plain form:
-- Top nav: **Log Update** ↔ **Insights**
-- Inside Insights, a segmented switcher: **Overview** (the old dashboard —
-  status split, blockers, current board), **Weekly** (View 2), **Bandwidth**
-  (View 3), **Risk** (Control Mapping)
-- Status/risk colour-coding is consistent everywhere (blue = in progress,
-  amber = blocked on EQ, red = blocked on GC, green = delivered / low risk)
+Also fixed along the way: the GC View's comment feature (posting a
+comment on a blocked-on-GC item) had frontend code calling a backend
+action that didn't exist yet — added `Comments` sheet + `getComments` /
+`submitComment` so that actually works now.
 
-## Logging multiple workstreams in one day
+## Upgrading your existing sheet
 
-The daily form isn't one-workstream-per-submission. It's one card per work
-item — add as many as you touched that day (a "+ Add another workstream"
-button under the last card), fill in Date and Your name once at the top,
-and hit **Log update** once. Every card becomes its own row in the Log
-sheet, so the underlying data and all the dashboards are unaffected —
-only the data-entry experience changed.
+You do **not** need to start over.
 
-**Stage is free text, not a dropdown.** What counts as a "stage" is
-different in every workstream (Peer Review QA's stages look nothing like
-Survey Packages' stages), so it can't be a fixed list without either
-missing real values or ballooning into an unmanageable one. It's a plain
-text field with autocomplete suggestions — seeded with common values, and
-growing automatically from whatever people actually type, so dropdown-like
-convenience is still there without the lock-in.
+1. Open Extensions > Apps Script on your existing sheet, replace the
+   entire contents with the new `apps-script.gs`, save.
+2. Run `setupSheets` again. It's safe to re-run — it only creates tabs
+   that don't already exist yet (`WorkstreamCategory`, `StepEstimates`,
+   `Comments`) and never touches your existing Log, Config, WeeklyNotes,
+   or Risk data. Your Log sheet picks up the new "Carry Over Reason"
+   column automatically the next time someone submits; old rows just
+   read back with that field blank.
+3. Open the new **WorkstreamCategory** tab and double check the R&D/Ops
+   split matches reality (currently `WS1 - Paddock Mapping & Digitizing`
+   and `WS3: ALS to CPC` are seeded as R&D — reclassify anything else
+   that should count as R&D).
+4. Open the new **StepEstimates** tab and sanity-check the pre-fill
+   numbers — several are real historical averages from your Log, the
+   rest are rough placeholders with no data behind them yet.
+5. Deploy > Manage deployments > Edit (pencil) > New version, so the
+   live URL actually serves this code.
+6. Replace `index.html` (and/or `app.js` / `render.js` / `api.js` /
+   `config.js` / `utils.js` if you maintain them separately) wherever
+   you're hosting the frontend.
 
-## Setup (15 minutes, one time)
+No changes needed to `API_URL` — same deployment URL as before, as long
+as you used "New version" rather than a brand new deployment.
 
-1. **Create a new Google Sheet.** This will hold your live data — this is
-   allowed to be a fresh sheet, it does not need to be the existing
-   Status Tracker workbook.
-2. **Extensions > Apps Script.** Delete the placeholder `myFunction`
-   code, paste in the entire contents of `apps-script.gs`.
-3. **Run `setupSheets` once.** Select it from the function dropdown at
-   the top, click Run. Approve the permissions prompt (it's your own
-   script touching your own sheet). This creates four tabs:
-   - **Log** — one row per daily check-in, this is your database
-   - **Config** — pre-seeded with your current workstreams, projects,
-     and POC names, pulled from the latest workbook. Edit this tab any
-     time to add a new project or person — no code changes needed, the
-     form picks it up automatically.
-   - **WeeklyNotes** — one row per workstream per week, filled by
-     whoever submits the "Weekly note" form in the Weekly panel
-   - **Risk** — pre-seeded from your Control Mapping tab. Edit ratings
-     directly here; this feeds the Risk panel and rarely needs updating
-4. **Deploy > New deployment > Web app.**
-   - Execute as: **Me**
-   - Who has access: **Anyone within [your org]** (or Anyone, if people
-     outside your Google Workspace need to submit too)
-   - Click Deploy, copy the **web app URL** (ends in `/exec`).
-5. **Open `config.js`** and paste that URL into `API_URL`.
-6. **Host the frontend.** Easiest path: create a free GitHub repo, add
-   the 6 frontend files (`index.html`, `app.js`, `render.js`, `api.js`,
-   `utils.js`, `config.js`), turn on GitHub Pages. You'll get a URL you
-   can share with the whole team (and with leadership, if you want them
-   using it directly rather than seeing a screenshot).
-   Alternatively, drop the files in any internal web server, or just
-   open `index.html` locally for a quick test.
-7. Share the URL with the team. That's the form. The **Dashboard** tab
-   in the same page is the rollup — that's what you'd screen-share or
-   link in the Sri update.
+## Rolling this out safely on a live tool
 
-**After any future edit to `apps-script.gs`:** you must go to
-Deploy > Manage deployments > Edit (pencil icon) > New version, or the
-live URL keeps serving the old code.
+Your team fills this in every day, so treat this as a real deploy, not
+a file swap. Do it in this order and nobody loses data or gets a broken
+form mid-entry:
 
-## Data-quality notes from your current sheet
+**1. Duplicate the live sheet before touching anything.**
+Open the real Google Sheet > File > Make a copy. Do all of steps 2-4
+against the *copy* first. This is your rehearsal — schema changes
+(new tabs, new columns) should never be tested against the sheet
+people are actively logging into.
 
-A few things I didn't try to "fix" silently, since they might be real
-data rather than typos — worth a quick look:
-- One row in "Initial Strat -HIR" has `#REF!` as a GC contact
-  (2026-07-22, Nerren Nerren) — a broken cell reference in the original
-  formula-linked sheet.
-- "Salt lake" shows up both as a project name (under Restrat-HIR) and as
-  a GC contact name (under Initial Strat-HIR, 2026-07-06 row) — worth
-  confirming which is correct before it gets seeded into the Config tab
-  as a person's name.
+**2. Test the backend against the copy.**
+In the copy's Extensions > Apps Script, paste in the new
+`apps-script.gs`, run `setupSheets`, and confirm: the four new tabs
+(WorkstreamCategory, StepEstimates, Comments — plus the Log sheet's
+new trailing column) appear, and nothing in your existing Log/Config/
+WeeklyNotes/Risk data moved or changed. Deploy the copy as its own
+temporary Web App, point a local copy of the new `index.html` at that
+temporary URL (edit `API_URL` in it just for this test), and click
+through: submit a log entry, check every Insights tab loads, post a
+GC View comment, submit a weekly note on a Thursday date.
 
-## What's intentionally left simple
+**3. Once it checks out, apply the same backend change to production.**
+Go to the *real* Apps Script project (bound to the real, live sheet —
+not a new one, so history is preserved). Replace the code with the
+same `apps-script.gs`, run `setupSheets` once (additive only, same
+guarantee as step 2), then Deploy > Manage deployments > Edit (pencil)
+> New version. This keeps the same `/exec` URL, so `API_URL` in the
+frontend doesn't change and nobody needs a new link.
 
-- **No login/auth** — anyone with the link can submit. Fine for an
-  internal team tool; if that's a problem, restricting the Web App to
-  "Anyone within [org]" (step 4) requires a Google Workspace login,
-  which covers most of it.
-- **The old per-workstream matrix tabs** aren't recreated 1:1 — the
-  "By workstream" table and "Current status board" carry the same
-  information, just live instead of hand-typed. If leadership
-  specifically wants the old matrix *look*, that's a formula-based
-  (QUERY/PIVOT) addition to the Sheet itself, doable on top of this
-  without touching the form.
-- **Weekly capacity is a flat 40hrs/person** (`DAILY_CAPACITY_HOURS` ×
-  `WEEKLY_CAPACITY_DAYS` in `apps-script.gs`). Edit those two constants
-  if your team's standard week differs, or if it should vary by person.
-- **Carry-over logic** (Weekly panel) counts a project as carried over
-  if it was touched last week, touched again this week, and isn't
-  Delivered by week's end — a reasonable proxy, but if your team defines
-  "carry over" differently, that's a one-function tweak in
-  `getWeeklyUpdate`.
+**4. Timing the backend deploy.**
+Apps Script "new version" deploys take effect near-instantly and the
+new code is backward-compatible with the current live frontend (old
+dropdown labels, missing new fields — all handled gracefully), so
+there's no real window of breakage. Still, do it at a quiet moment
+(early morning, before end-of-day logging starts) rather than during
+a burst of submissions, purely so you're not debugging with live
+traffic in flight if something unexpected comes up.
+
+**5. Swap the frontend.**
+Push the new `index.html` to wherever it's hosted (GitHub Pages /
+internal server). This is instant and doesn't touch anyone currently
+mid-form — they keep using the page they already loaded until they
+refresh or come back tomorrow. Nobody gets yanked out of a half-filled
+form.
+
+**6. Smoke test on production immediately after.**
+Submit one real test entry (workstream: something obviously a test, or
+use Ad-hoc), confirm it shows up in the Log sheet and on the Overview
+board, then delete that test row from the Log sheet directly. Check
+Insights tabs load, GC View comment posts.
+
+**7. Give the team a heads-up, not just a silent swap.**
+The visible changes people will notice logging in tomorrow: "Blocked -
+EQ" is now "Carry Over" with a reason box, there's a new "Audit
+Triggered Rework" time bucket option, Miscellaneous no longer shows up
+in Insights, and the weekly panels now run Thursday-to-Wednesday
+instead of Monday-Friday. A two-line Slack/email covering those four
+things avoids a flood of "what happened to X" messages.
+
+**8. Keep a rollback ready for 24-48h.**
+Save a copy of the *previous* `apps-script.gs` and `index.html`
+somewhere findable. If something's wrong: Deploy > Manage deployments
+> Edit > pick the previous version from the dropdown (reverts the
+backend instantly), and re-push the old `index.html`. Nobody's Log
+data is at risk either way — every schema change here is additive,
+nothing was deleted or renamed at the sheet level.
+
+**One hygiene check before you commit:** open your live Config tab and
+confirm the exact spelling of `WS1 - Paddock Mapping & Digitizing` and
+`WS3: ALS to CPC` matches what's in the new WorkstreamCategory tab
+letter-for-letter (including the colon vs dash). If they don't match,
+those workstreams will silently default to "Ops" in the Bandwidth
+split instead of showing as R&D — worth a 30-second look before you
+deploy, not after. Also worth checking: if anyone has a weekly note
+already submitted for the "old" Monday-anchored week that hasn't
+happened yet this cycle, it won't match the new Thursday-anchored
+lookup — not a data-loss issue (the row stays in WeeklyNotes either
+way), just something that could look like a "missing note" the first
+week after this deploys.
+
+## Everything else
+
+One Log sheet is still the single source of truth, everything else is
+computed on read, and the setup/deploy steps are the same as before
+(Apps Script Web App, Execute as Me, deploy, paste the URL into
+`API_URL`).
+
+## v3.2 — Two-way Config sync, Training & KT workstream, Training Metrics tab
+
+| Ask | What changed |
+|---|---|
+| "If somebody adds a new workstream to the gsheets... reflect on the frontend, make it two-way" | The Sheet-to-frontend direction already worked (Config tab edits show up via the 2-min auto-refresh or the manual "Refresh options" button). What was missing was the other direction: typing a brand-new workstream or project through the form's "+ Add ... not on this list" flow only ever landed in that one person's Log row — it never showed up as a real dropdown option for anyone else. Fixed: the first time a new workstream/project combo is submitted, it's now also written back to the Config tab (and WorkstreamCategory, if it's a genuinely new workstream, defaulted to Ops). Already-known combos are a no-op, so this doesn't create duplicates or slow down normal submissions. |
+| "New workstream Training & KT, filtered from insights, with Training & KT - Given / Received time buckets" | Added as a workstream (empty project list, same as Ad-hoc/CarbonPlus — type the training topic as the "project"), added to the excluded-from-Insights list alongside Miscellaneous, and added the two new Time Bucket options. |
+| "Separate Training Metrics view, like Bandwidth, weekly" | New **Training Metrics** tab in Insights. Same shape as Bandwidth: a team-wide Given-vs-Received split up top, then per-person cards below (hours given, hours received, total), same Thu-Wed week-nav pattern, defaults to the current week. |
+
+**Worth knowing about the two-way sync:** it triggers off the literal (workstream, project) pair in the submission, not off whether the person actually used the "+ Add new" button — so if someone somehow submits a slightly different spelling of an existing workstream (extra space, different capitalization), that becomes a *new* Config row rather than matching the existing one. Not harmful (nothing breaks), but it means Config is worth a periodic glance for near-duplicate workstream names, the same way any freeform-entry system needs light housekeeping.
