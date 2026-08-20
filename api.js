@@ -61,6 +61,30 @@ const Api = {
     return data;
   },
 
+  async fetchWeeklyDeliveries(params) {
+    const qsStr = new URLSearchParams({ action: 'deliveries', ...(params || {}) }).toString();
+    const res = await fetch(`${API_URL}?${qsStr}`);
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Deliveries request failed');
+    return data;
+  },
+
+  async fetchWeeklyCarryOvers(params) {
+    const qsStr = new URLSearchParams({ action: 'carryovers', ...(params || {}) }).toString();
+    const res = await fetch(`${API_URL}?${qsStr}`);
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Carry-overs request failed');
+    return data;
+  },
+
+  async fetchTrainingMetrics(params) {
+    const qsStr = new URLSearchParams({ action: 'training', ...(params || {}) }).toString();
+    const res = await fetch(`${API_URL}?${qsStr}`);
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Training metrics request failed');
+    return data;
+  },
+
   async fetchRisk() {
     const res = await fetch(`${API_URL}?action=risk`);
     const data = await res.json();
@@ -72,6 +96,23 @@ const Api = {
     const res = await fetch(API_URL, {
       method: 'POST',
       body: JSON.stringify({ type: 'weekly', ...payload })
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Submit failed');
+    return data;
+  },
+
+  async fetchComments() {
+    const res = await fetch(`${API_URL}?action=comments`);
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Comments request failed');
+    return data;
+  },
+
+  async submitComment(payload) {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ type: 'comment', ...payload })
     });
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || 'Submit failed');
