@@ -36,9 +36,7 @@ function todayISO() {
 // no time-of-day, no local timezone involved in the arithmetic. Each date
 // is anchored at UTC midnight internally (Date.UTC) and read back with
 // UTC getters, so the result is identical regardless of the viewer's
-// timezone. (Mixing local-time construction with toISOString(), as this
-// used to, silently shifts the date by a day for anyone not in UTC+0 —
-// that was the bug behind week-nav showing Sun-Wed instead of Mon-Fri.)
+// timezone.
 
 function addDaysISO(iso, days) {
   const [y, m, d] = iso.split('-').map(Number);
@@ -50,20 +48,19 @@ function addDaysISO(iso, days) {
   return `${yy}-${mm}-${dd}`;
 }
 
-function mostRecentMondayISO() {
+function mostRecentThursdayISO() {
+  // v3: the work week runs Thursday through the following Wednesday
+  // (Sat/Sun sit as off-days in the middle of that span), so every
+  // weekly view anchors on the most recent Thursday instead of Monday.
   const today = todayISO();
   const [y, m, d] = today.split('-').map(Number);
-  const dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay(); // 0 = Sun
-  const diff = dow === 0 ? 6 : dow - 1;
+  const dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay(); // 0 = Sun ... 4 = Thu ... 6 = Sat
+  const diff = (dow - 4 + 7) % 7;
   return addDaysISO(today, -diff);
 }
 
 function formatDateLabel(value) {
   if (!value) return '';
-  // Accepts a bare "YYYY-MM-DD" string (what the backend sends), a full
-  // ISO datetime string, or a Date object — always renders the calendar
-  // date as intended, using UTC throughout so it can't drift a day either
-  // direction depending on the viewer's timezone.
   let y, m, d;
   if (value instanceof Date) {
     if (isNaN(value)) return String(value);
@@ -81,7 +78,7 @@ function formatDateLabel(value) {
 }
 
 function weekRangeLabel(startISO) {
-  const endISO = addDaysISO(startISO, 4); // Friday — work week is Mon-Fri
+  const endISO = addDaysISO(startISO, 6); // following Wednesday — Thu-Wed work week, Sat/Sun off in between
   return `${formatDateLabel(startISO)} – ${formatDateLabel(endISO)}`;
 }
 
