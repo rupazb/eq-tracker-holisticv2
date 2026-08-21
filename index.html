@@ -751,9 +751,9 @@
         <form id="weekly-note-form">
           <div class="field-row">
             <div class="field">
-              <label for="weekly-field-week-start">Week starting (Thursday)</label>
+              <label for="weekly-field-week-start">Week starting (Friday)</label>
               <input type="date" id="weekly-field-week-start" required>
-              <p class="form-intro" style="margin:6px 0 0;">Defaults to this week's Thursday — leave as-is unless you're backfilling an older week.</p>
+              <p class="form-intro" style="margin:6px 0 0;">Defaults to this week's Friday — leave as-is unless you're backfilling an older week.</p>
             </div>
             <div class="field">
               <label for="weekly-field-submitted-by">Your name <span class="req">*</span></label>
@@ -1062,14 +1062,15 @@ function addDaysISO(iso, days) {
   return `${yy}-${mm}-${dd}`;
 }
 
-function mostRecentThursdayISO() {
-  // v3: the work week runs Thursday through the following Wednesday
-  // (Sat/Sun sit as off-days in the middle of that span), so every
-  // weekly view anchors on the most recent Thursday instead of Monday.
+function mostRecentFridayISO() {
+  // v3.3: the work week runs Friday through the following Thursday
+  // (Sat/Sun sit as off-days in the middle of that span — working days
+  // in order are Fri, Mon, Tue, Wed, Thu), so every weekly view anchors
+  // on the most recent Friday.
   const today = todayISO();
   const [y, m, d] = today.split('-').map(Number);
-  const dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay(); // 0 = Sun ... 4 = Thu ... 6 = Sat
-  const diff = (dow - 4 + 7) % 7;
+  const dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay(); // 0 = Sun ... 5 = Fri ... 6 = Sat
+  const diff = (dow - 5 + 7) % 7;
   return addDaysISO(today, -diff);
 }
 
@@ -1092,7 +1093,7 @@ function formatDateLabel(value) {
 }
 
 function weekRangeLabel(startISO) {
-  const endISO = addDaysISO(startISO, 6); // following Wednesday — Thu-Wed work week, Sat/Sun off in between
+  const endISO = addDaysISO(startISO, 6); // following Thursday — Fri-Thu work week, Sat/Sun off in between
   return `${formatDateLabel(startISO)} – ${formatDateLabel(endISO)}`;
 }
 
@@ -1523,7 +1524,10 @@ const Render = {
       target.appendChild(el('div', { class: 'weekly-card' }, [
         el('div', { class: 'weekly-card-top' }, [
           el('span', { class: 'weekly-card-ws', text: w.workstream }),
-          this.categoryChip(w.category)
+          el('div', { style: 'display:flex; gap:6px; align-items:center;' }, [
+            el('span', { class: 'chip chip-sm', style: '--chip-color:#34D399', text: `${w.count} delivered` }),
+            this.categoryChip(w.category)
+          ])
         ]),
         el('div', { class: 'delivered-project-list' },
           w.projects.map(p => el('div', { class: 'delivered-project-item', text: p }))
@@ -1549,7 +1553,10 @@ const Render = {
       target.appendChild(el('div', { class: 'weekly-card' }, [
         el('div', { class: 'weekly-card-top' }, [
           el('span', { class: 'weekly-card-ws', text: w.workstream }),
-          this.categoryChip(w.category)
+          el('div', { style: 'display:flex; gap:6px; align-items:center;' }, [
+            el('span', { class: 'chip chip-sm', style: '--chip-color:#F2B84B', text: `${w.count} carried over` }),
+            this.categoryChip(w.category)
+          ])
         ]),
         el('div', { class: 'delivered-project-list' },
           w.projects.map(p => el('div', { class: 'carryover-project-item' }, [
@@ -1918,14 +1925,14 @@ const Render = {
 const App = {
   config: null,
   activeInsightPanel: 'overview',
-  // v3: every weekly-oriented panel defaults to the CURRENT week (Thu
-  // through today) rather than the last completed one — Thursday is the
-  // work week's anchor now, not Monday (see mostRecentThursdayISO in
+  // v3: every weekly-oriented panel defaults to the CURRENT week (Fri
+  // through today) rather than the last completed one — Friday is the
+  // work week's anchor now, not Monday (see mostRecentFridayISO in
   // utils.js).
-  weeklyWeekStart: mostRecentThursdayISO(),
-  bandwidthWeekStart: mostRecentThursdayISO(),
-  deliveriesWeekStart: mostRecentThursdayISO(),
-  trainingWeekStart: mostRecentThursdayISO(),
+  weeklyWeekStart: mostRecentFridayISO(),
+  bandwidthWeekStart: mostRecentFridayISO(),
+  deliveriesWeekStart: mostRecentFridayISO(),
+  trainingWeekStart: mostRecentFridayISO(),
   // v3: dashboard's Delivered section defaults to a recent window;
   // "Show all" flips this to 'all'.
   deliveredDays: String(DEFAULT_DELIVERED_WINDOW_DAYS),
@@ -2403,7 +2410,7 @@ const App = {
   // ---------------------------------------------------------------
   populateWeeklyForm(config) {
     Render.populateSelect(qs('#weekly-field-workstream'), config.workstreams, 'Select a workstream');
-    qs('#weekly-field-week-start').value = mostRecentThursdayISO();
+    qs('#weekly-field-week-start').value = mostRecentFridayISO();
   },
 
   wireWeeklyForm() {
@@ -2438,7 +2445,7 @@ const App = {
         await Api.submitWeeklyNote(payload);
         showToast('Weekly note saved.', 'success');
         qs('#weekly-note-form').reset();
-        qs('#weekly-field-week-start').value = mostRecentThursdayISO();
+        qs('#weekly-field-week-start').value = mostRecentFridayISO();
         qs('#weekly-note-form-wrap').classList.add('hidden');
         this.refreshWeekly();
       } catch (err) {
